@@ -34,7 +34,7 @@ import java.io.{File, FileOutputStream}
 import scala.collection.compat._
 import scala.util.Random
 
-class IntegrationSuite
+abstract class IntegrationSuite(implementation: String)
     extends AnyFunSpec
     with ScalaCheckPropertyChecks
     with DataFrameSuiteBase
@@ -92,7 +92,11 @@ class IntegrationSuite
     ): DataFrame = {
       val theFileName = fileName.getOrElse(File.createTempFile("spark_excel_test_", ".xlsx").getAbsolutePath)
 
-      val writer = df.write.excel(dataAddress = s"'$sheetName'!A1", header = header).mode(saveMode)
+      val writer = df.write
+        .format(implementation)
+        .option("dataAddress", s"'$sheetName'!A1")
+        .option("header", header)
+        .mode(saveMode)
       val configuredWriter =
         Map("dataAddress" -> dataAddress).foldLeft(writer) {
           case (wri, (key, Some(value))) => wri.option(key, value)
@@ -100,7 +104,7 @@ class IntegrationSuite
         }
       configuredWriter.save(theFileName)
 
-      val reader = spark.read.excel(dataAddress = s"'$sheetName'!A1", header = header)
+      val reader = spark.read.format(implementation).option("dataAddress", s"'$sheetName'!A1").option("header", header)
       val configuredReader = Map(
         "maxRowsInMemory" -> maxRowsInMemory,
         "maxByteArraySize" -> maxByteArraySize,
@@ -126,7 +130,9 @@ class IntegrationSuite
       assertDataFrameApproximateEquals(expected, inferred, relTol = 1.0e-5)
     }
 
-    describe(s"with maxRowsInMemory = $maxRowsInMemory; maxByteArraySize = $maxByteArraySize") {
+    describe(
+      s"with implementation = $implementation, maxRowsInMemory = $maxRowsInMemory; maxByteArraySize = $maxByteArraySize"
+    ) {
       it("parses known datatypes correctly") {
         forAll(rowsGen) { rows =>
           val expected = spark.createDataset(rows).toDF()
@@ -380,3 +386,6 @@ class IntegrationSuite
   runTests(maxRowsInMemory = Some(1))
   runTests(maxRowsInMemory = Some(1), maxByteArraySize = Some(100000000))
 }
+
+class IntegrationSuiteV1 extends IntegrationSuite("com.crealytics.spark.excel")
+class IntegrationSuiteV2 extends IntegrationSuite("excel")
