@@ -31,7 +31,7 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with CiRe
   }
 
   def sparkVersionSpecificSources = T {
-    val versionSpecificDirs = os.list(os.pwd / "src" / "main")
+    val versionSpecificDirs = os.list(mill.api.WorkspaceRoot.workspaceRoot / "src" / "main")
     val Array(sparkMajor, sparkMinor, sparkPatch) = sparkVersion.split("\\.")
     val sparkBinaryVersion = s"$sparkMajor.$sparkMinor"
     versionSpecificDirs.filter(_.last match {
