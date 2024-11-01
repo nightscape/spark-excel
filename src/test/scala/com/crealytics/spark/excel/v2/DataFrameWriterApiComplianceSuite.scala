@@ -22,13 +22,12 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class DataFrameWriterApiComplianceSuite extends AnyWordSpec with DataFrameSuiteBase with LocalFileTestingUtilities {
 
-  private def readSimpleCsv = {
-    spark.read
-      .format("csv")
-      .option("delimiter", ";")
-      .option("header", "true")
-      .option("path", "src/test/resources/v2readwritetest/simple_csv/simple.csv")
-      .load()
+  private def simpleDf = {
+    val data = Seq(
+      ("foo", "bar", "1"),
+      ("baz", "bang", "2")
+    )
+    spark.createDataFrame(data).toDF("col1", "col2", "col3")
   }
 
   /** Checks that the excel data files in given folder equal the provided dataframe */
@@ -56,9 +55,9 @@ class DataFrameWriterApiComplianceSuite extends AnyWordSpec with DataFrameSuiteB
     for (writeMode <- writeModes) {
       s"write a dataframe to xlsx with ${writeMode.toString}" in withExistingCleanTempDir("v2") { targetDir =>
         // create a df from csv then write as xlsx
-        val dfCsv = readSimpleCsv
+        val df = simpleDf
 
-        dfCsv.write
+        df.write
           .format("excel")
           .option("path", targetDir)
           .option("header", value = true)
@@ -69,16 +68,16 @@ class DataFrameWriterApiComplianceSuite extends AnyWordSpec with DataFrameSuiteB
         assert(listOfFiles.nonEmpty, s"expected at least one excel file")
 
         // is the result really the same?
-        assertWrittenExcelData(dfCsv, targetDir)
+        assertWrittenExcelData(df, targetDir)
 
       }
       s"write a dataframe to xlsx with ${writeMode.toString} (partitioned)" in withExistingCleanTempDir("v2") {
         targetDir =>
           assume(spark.sparkContext.version >= "3.0.1")
           // create a df from csv then write as xlsx
-          val dfCsv = readSimpleCsv
+          val df = simpleDf
 
-          dfCsv.write
+          df.write
             .partitionBy("col1")
             .format("excel")
             .option("path", targetDir)
@@ -96,7 +95,7 @@ class DataFrameWriterApiComplianceSuite extends AnyWordSpec with DataFrameSuiteB
           }
 
           // is the result really the same?
-          assertWrittenExcelData(dfCsv, targetDir)
+          assertWrittenExcelData(df, targetDir)
 
       }
     }
@@ -107,9 +106,9 @@ class DataFrameWriterApiComplianceSuite extends AnyWordSpec with DataFrameSuiteB
           assume(spark.sparkContext.version >= "3.0.1")
         }
 
-        val dfCsv = readSimpleCsv
+        val df = simpleDf
 
-        val dfWriter = if (isPartitioned) dfCsv.write else dfCsv.write.partitionBy("col1")
+        val dfWriter = if (isPartitioned) df.write else df.write.partitionBy("col1")
 
         dfWriter
           .format("excel")
@@ -124,9 +123,9 @@ class DataFrameWriterApiComplianceSuite extends AnyWordSpec with DataFrameSuiteB
           .mode(SaveMode.Append)
           .save()
 
-        val orderedSchemaColumns = dfCsv.schema.fields.map(f => f.name).sorted
+        val orderedSchemaColumns = df.schema.fields.map(f => f.name).sorted
         val expectedDf =
-          dfCsv.union(dfCsv).select(orderedSchemaColumns.head, orderedSchemaColumns.tail.toIndexedSeq: _*)
+          df.union(df).select(orderedSchemaColumns.head, orderedSchemaColumns.tail.toIndexedSeq: _*)
 
         assertWrittenExcelData(expectedDf, targetDir)
       }
