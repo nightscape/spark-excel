@@ -31,21 +31,11 @@ jobs:
         os: [ubuntu-latest]
         scala: [2.12.20, 2.13.15]
         java: [temurin@8]
-        spark: [2.4.1, 2.4.7, 2.4.8, 3.0.1, 3.0.3, 3.1.1, 3.1.2, 3.1.3, 3.2.4, 3.3.4, 3.4.1, 3.4.4, 3.5.3]
+        spark: [2.4.8, 3.0.3, 3.1.3, 3.2.4, 3.3.4, 3.4.4, 3.5.3]
         exclude:
-          - spark: 2.4.1
-            scala: 2.13.15
-          - spark: 2.4.7
-            scala: 2.13.15
           - spark: 2.4.8
             scala: 2.13.15
-          - spark: 3.0.1
-            scala: 2.13.15
           - spark: 3.0.3
-            scala: 2.13.15
-          - spark: 3.1.1
-            scala: 2.13.15
-          - spark: 3.1.2
             scala: 2.13.15
           - spark: 3.1.3
             scala: 2.13.15
@@ -143,4 +133,4 @@ jobs:
           (echo "$PGP_PASSPHRASE"; echo; echo) | gpg --command-fd 0 --pinentry-mode loopback --change-passphrase $(gpg --list-secret-keys --with-colons 2> /dev/null | grep '^sec:' | cut --delimiter ':' --fields 5 | tail -n 1)
 
       - name: Publish
-        run: ./mill -i io.kipp.mill.ci.release.ReleaseModule/publishAll
+        run: ./mill -i mill.contrib.sonatypecentral.SonatypeCentralPublishModule/publishAll --publishArtifacts __.publishArtifacts --username $SONATYPE_USERNAME --password $SONATYPE_PASSWORD --gpgArgs "--passphrase=$PGP_PASSPHRASE,--no-tty,--pinentry-mode,loopback,--batch,--yes,-a,-b" --bundleName dev.mauch-spark-excel-$(date +%Y-%m-%d-%H-%M)
