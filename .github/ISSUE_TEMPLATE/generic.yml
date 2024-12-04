@@ -37,10 +37,10 @@ body:
       Steps to Reproduce (for bugs)
       Provide a link to a live example, or an unambiguous set of steps to reproduce this bug. Include code to reproduce, if relevant. Example:
       Download the example file uploaded here
-      Start Spark from command line as spark-shell --packages com.crealytics:spark-excel_2.12:x.y.z --foo=bar
+      Start Spark from command line as spark-shell --packages dev.mauch:spark-excel_2.12:x.y.z --foo=bar
       Read the downloaded example file
       val df = spark.read
-        .format("com.crealytics.spark.excel")
+        .format("dev.mauch.spark.excel")
         .option("dataAddress", "'My Sheet'!B3:C35")
         .load("example_file_exhibiting_bug.xlsx")
   validations:

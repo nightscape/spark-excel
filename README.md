@@ -2,13 +2,13 @@
 
 A library for querying Excel files with Apache Spark, for Spark SQL and DataFrames.
 
-[![Build Status](https://github.com/crealytics/spark-excel/workflows/CI/badge.svg)](https://github.com/crealytics/spark-excel/actions)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.crealytics/spark-excel_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.crealytics/spark-excel_2.12)
+[![Build Status](https://github.dev/mauch/spark-excel/workflows/CI/badge.svg)](https://github.dev/mauch/spark-excel/actions)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/dev.mauch/spark-excel_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/dev.mauch/spark-excel_2.12)
 
 
 ## Co-maintainers wanted
 Due to personal and professional constraints, the development of this library has been rather slow.
-If you find value in this library, please consider stepping up as a co-maintainer by leaving a comment [here](https://github.com/crealytics/spark-excel/issues/191).
+If you find value in this library, please consider stepping up as a co-maintainer by leaving a comment [here](https://github.dev/mauch/spark-excel/issues/191).
 Help is very welcome e.g. in the following areas:
 
 * Additional features
@@ -25,21 +25,21 @@ List of spark versions, those are automatically tested:
 ```
 spark: ["2.4.1", "2.4.7", "2.4.8", "3.0.1", "3.0.3", "3.1.1", "3.1.2", "3.2.4", "3.3.2", "3.4.1"]
 ```
-For more detail, please refer to project CI: [ci.yml](https://github.com/crealytics/spark-excel/blob/main/.github/workflows/ci.yml#L10)
+For more detail, please refer to project CI: [ci.yml](https://github.dev/mauch/spark-excel/blob/main/.github/workflows/ci.yml#L10)
 
 ## Linking
 You can link against this library in your program at the following coordinates:
 
 ### Scala 2.12
 ```
-groupId: com.crealytics
+groupId: dev.mauch
 artifactId: spark-excel_2.12
 version: <spark-version>_0.18.0
 ```
 
 ### Scala 2.11
 ```
-groupId: com.crealytics
+groupId: dev.mauch
 artifactId: spark-excel_2.11
 version: <spark-version>_0.13.7
 ```
@@ -49,22 +49,22 @@ This package can be added to  Spark using the `--packages` command line option. 
 
 ### Spark compiled with Scala 2.12
 ```
-$SPARK_HOME/bin/spark-shell --packages com.crealytics:spark-excel_2.12:<spark-version>_0.18.0
+$SPARK_HOME/bin/spark-shell --packages dev.mauch:spark-excel_2.12:<spark-version>_0.18.0
 ```
 
 ### Spark compiled with Scala 2.11
 ```
-$SPARK_HOME/bin/spark-shell --packages com.crealytics:spark-excel_2.11:<spark-version>_0.13.7
+$SPARK_HOME/bin/spark-shell --packages dev.mauch:spark-excel_2.11:<spark-version>_0.13.7
 ```
 
 ## Features
 * This package allows querying Excel spreadsheets as [Spark DataFrames](https://spark.apache.org/docs/latest/sql-programming-guide.html).
-* From spark-excel [0.14.0](https://github.com/crealytics/spark-excel/releases/tag/v0.14.0) (August 24, 2021), there are two implementation of spark-excel
+* From spark-excel [0.14.0](https://github.dev/mauch/spark-excel/releases/tag/v0.14.0) (August 24, 2021), there are two implementation of spark-excel
     * Original Spark-Excel with Spark data source API 1.0
     * Spark-Excel V2 with data source API V2.0+, which supports loading from multiple files, corrupted record handling and some improvement on handling data types.
       See below for further details
 
-To use V2 implementation, just change your .format from `.format("com.crealytics.spark.excel")` to `.format("excel")`.
+To use V2 implementation, just change your .format from `.format("dev.mauch.spark.excel")` to `.format("excel")`.
 See [below](#excel-api-based-on-datasourcev2) for some details
 
 See the [changelog](CHANGELOG.md) for latest features, fixes etc.
@@ -80,7 +80,7 @@ import org.apache.spark.sql._
 
 val spark: SparkSession = ???
 val df = spark.read
-    .format("com.crealytics.spark.excel") // Or .format("excel") for V2 implementation
+    .format("dev.mauch.spark.excel") // Or .format("excel") for V2 implementation
     .option("dataAddress", "'My Sheet'!B3:C35") // Optional, default: "A1"
     .option("header", "true") // Required
     .option("treatEmptyValuesAsNulls", "false") // Optional, default: true
@@ -104,7 +104,7 @@ and provides a `.excel` method which accepts all possible options and provides d
 
 ```scala
 import org.apache.spark.sql._
-import com.crealytics.spark.excel._
+import dev.mauch.spark.excel._
 
 val spark: SparkSession = ???
 val df = spark.read.excel(
@@ -137,7 +137,7 @@ val df = spark.read.excel(
 or to read in the names dynamically:
 
 ```scala
-import com.crealytics.spark.excel.WorkbookReader
+import dev.mauch.spark.excel.WorkbookReader
 val sheetNames = WorkbookReader( Map("path" -> "Worktime.xlsx")
                                , spark.sparkContext.hadoopConfiguration
                                ).sheetNames
@@ -160,7 +160,7 @@ val peopleSchema = StructType(Array(
 
 val spark: SparkSession = ???
 val df = spark.read
-    .format("com.crealytics.spark.excel") // Or .format("excel") for V2 implementation
+    .format("dev.mauch.spark.excel") // Or .format("excel") for V2 implementation
     .option("dataAddress", "'Info'!A1")
     .option("header", "true")
     .schema(peopleSchema)
@@ -173,7 +173,7 @@ import org.apache.spark.sql._
 
 val df: DataFrame = ???
 df.write
-  .format("com.crealytics.spark.excel") // Or .format("excel") for V2 implementation
+  .format("dev.mauch.spark.excel") // Or .format("excel") for V2 implementation
   .option("dataAddress", "'My Sheet'!B3:C35")
   .option("header", "true")
   .option("dateFormat", "yy-mmm-d") // Optional, default: yy-m-d h:mm
@@ -205,7 +205,7 @@ Currently the following address styles are supported:
 The V2 API offers you several improvements when it comes to file and folder handling.
 and works in a very similar way than data sources like csv and parquet.
 
-To use V2 implementation, just change your .format from `.format("com.crealytics.spark.excel")` to `.format("excel")`
+To use V2 implementation, just change your .format from `.format("dev.mauch.spark.excel")` to `.format("excel")`
 
 The big difference is the fact that you provide a path to read / write data from/to and not
 an individual single file only:
@@ -235,7 +235,7 @@ dataFrame.write
         .save("some/path")
 ````
 
-Need some more examples? Check out the [test cases](src/test/scala/com/crealytics/spark/excel/v2/DataFrameWriterApiComplianceSuite.scala)
+Need some more examples? Check out the [test cases](src/test/scala/dev/mauch/spark/excel/v2/DataFrameWriterApiComplianceSuite.scala)
 or have a look at our wiki
 
 ## Building From Source
@@ -250,5 +250,5 @@ We are grateful for their support in the initial development and open-sourcing o
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=crealytics/spark-excel&type=Date)](https://star-history.com/#crealytics/spark-excel&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=nightscape/spark-excel&type=Date)](https://star-history.com/#nightscape/spark-excel&Date)
 

@@ -54,10 +54,10 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with CiRe
 
   def pomSettings = PomSettings(
     description = "A Spark plugin for reading and writing Excel files",
-    organization = "com.crealytics",
-    url = "https://github.com/crealytics/spark-excel",
+    organization = "dev.mauch",
+    url = "https://github.com/nightscape/spark-excel",
     licenses = Seq(License.`Apache-2.0`),
-    versionControl = VersionControl.github("crealytics", "spark-excel"),
+    versionControl = VersionControl.github("nightscape", "spark-excel"),
     developers = Seq(Developer("nightscape", "Martin Mauch", "https://github.com/nightscape"))
   )
 

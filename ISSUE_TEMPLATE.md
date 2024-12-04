@@ -21,11 +21,11 @@ Moreover, please read the [`CHANGELOG.md`](../../blob/master/CHANGELOG.md) file 
 > reproduce this bug. Include code to reproduce, if relevant.
 > Example:
 1. Download the example file uploaded [here](http://example.com/)
-2. Start Spark from command line as `spark-shell --packages com.crealytics:spark-excel_2.12:x.y.z --foo=bar`
+2. Start Spark from command line as `spark-shell --packages dev.mauch:spark-excel_2.12:x.y.z --foo=bar`
 3. Read the downloaded example file
     ```
     val df = spark.read
-    .format("com.crealytics.spark.excel")
+    .format("dev.mauch.spark.excel")
     .option("dataAddress", "'My Sheet'!B3:C35")
     .load("example_file_exhibiting_bug.xlsx")
     ```
