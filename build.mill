@@ -76,7 +76,7 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
   def publishArtifacts: T[PublishModule.PublishData] = Task {
     val publishData = super.publishArtifacts()
     publishData.copy(
-      payload = publishData.payload.filterNot { case (ref, name) => ref.toString.contains("jar.dest") }
+      payload = publishData.payload.filterNot { case (ref, name) => Seq("jar.dest", "docJar.dest").exists(ref.toString.contains) }
     )
   }
 
