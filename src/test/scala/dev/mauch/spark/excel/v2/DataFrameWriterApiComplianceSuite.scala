@@ -23,10 +23,7 @@ import org.scalatest.wordspec.AnyWordSpec
 class DataFrameWriterApiComplianceSuite extends AnyWordSpec with DataFrameSuiteBase with LocalFileTestingUtilities {
 
   private def simpleDf = {
-    val data = Seq(
-      ("foo", "bar", "1"),
-      ("baz", "bang", "2")
-    )
+    val data = Seq(("foo", "bar", "1"), ("baz", "bang", "2"))
     spark.createDataFrame(data).toDF("col1", "col2", "col3")
   }
 

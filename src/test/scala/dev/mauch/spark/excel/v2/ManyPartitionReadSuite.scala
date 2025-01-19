@@ -21,7 +21,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.types.IntegerType
 import org.scalatest.wordspec.AnyWordSpec
-import org.apache.spark.sql.types.{StructType, StructField, StringType}
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 
 class ManyPartitionReadSuite extends AnyWordSpec with DataFrameSuiteBase with LocalFileTestingUtilities {
 
@@ -51,9 +51,9 @@ class ManyPartitionReadSuite extends AnyWordSpec with DataFrameSuiteBase with Lo
       // Each col1 value has multiple rows (around 10-11 rows each)
       val rowsPerPartition = if (col1 == 1) 8 else if (col1 == 2) 16 else 11
       (0 until rowsPerPartition).map { i =>
-        val index = (col1 - 1) * 11 + i + 1234  // Starting from 1234 as in original data
+        val index = (col1 - 1) * 11 + i + 1234 // Starting from 1234 as in original data
         Row(
-          Integer.valueOf(col1),  // Make it nullable Integer
+          Integer.valueOf(col1), // Make it nullable Integer
           s"fubar_$index",
           s"bazbang_${index + 77000}",
           s"barfang_${index + 237708}",
@@ -63,17 +63,17 @@ class ManyPartitionReadSuite extends AnyWordSpec with DataFrameSuiteBase with Lo
     }
 
     // Define schema explicitly to match expected nullability
-    val schema = StructType(Array(
-      StructField("col1", IntegerType, nullable = true),
-      StructField("col2", StringType, nullable = true),
-      StructField("col3", StringType, nullable = true),
-      StructField("col4", StringType, nullable = true),
-      StructField("col5", StringType, nullable = true)
-    ))
+    val schema = StructType(
+      Array(
+        StructField("col1", IntegerType, nullable = true),
+        StructField("col2", StringType, nullable = true),
+        StructField("col3", StringType, nullable = true),
+        StructField("col4", StringType, nullable = true),
+        StructField("col5", StringType, nullable = true)
+      )
+    )
 
     val dfInput = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
-
-
 
     val dfFinal = dfInput.union(dfInput)
 

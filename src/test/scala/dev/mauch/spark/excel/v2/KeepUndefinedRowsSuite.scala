@@ -72,8 +72,8 @@ object KeepUndefinedRowsSuite {
     Row("C", "7", "8")
   ).asJava
 
-  /** Issue: https://github.dev/mauch/spark-excel/issues/162 Spark-excel still infers to Double-Type, however, user
-    * can provide custom scheme and Spark-excel should load to IntegerType or LongType accordingly
+  /** Issue: https://github.dev/mauch/spark-excel/issues/162 Spark-excel still infers to Double-Type, however, user can
+    * provide custom scheme and Spark-excel should load to IntegerType or LongType accordingly
     */
   val userDefined_Issue162 = StructType(
     List(

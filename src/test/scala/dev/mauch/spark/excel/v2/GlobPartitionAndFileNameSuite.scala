@@ -25,8 +25,7 @@ import org.scalatest.funsuite.AnyFunSuite
   *
   * #52. input_file_name returns empty string https://github.dev/mauch/spark-excel/issues/52
   *
-  * #74. Allow reading multiple files specified as a list OR by a pattern
-  * https://github.dev/mauch/spark-excel/issues/74
+  * #74. Allow reading multiple files specified as a list OR by a pattern https://github.dev/mauch/spark-excel/issues/74
   *
   * #97. Reading multiple files https://github.dev/mauch/spark-excel/issues/97
   */
