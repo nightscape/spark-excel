@@ -32,6 +32,7 @@ import spoiwo.natures.xlsx.Model2XlsxConversions._
 
 import java.io.{File, FileOutputStream}
 import scala.collection.compat._
+import scala.util.Random
 
 class IntegrationSuite
     extends AnyFunSpec
@@ -171,6 +172,17 @@ class IntegrationSuite
           val original = spark.createDataset(rows).toDF()
           val inferred = writeThenRead(original, schema = None)
           assertEqualAfterInferringTypes(original, inferred)
+        }
+      }
+
+      it("handles filtering correctly") {
+        forAll(rowsGen.filter(_.nonEmpty)) { rows =>
+          val original = spark.createDataset(rows).toDF()
+          val inferred = writeThenRead(original, schema = None)
+          val allBytes = rows.map(_.aByte).distinct
+          val randomBytes = Random.shuffle(allBytes).take(allBytes.size / 2)
+          val filter = col("aByte").isin(randomBytes: _*)
+          assertEqualAfterInferringTypes(original.filter(filter), inferred.filter(filter))
         }
       }
 
