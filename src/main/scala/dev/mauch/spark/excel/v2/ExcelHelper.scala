@@ -107,7 +107,7 @@ class ExcelHelper private (options: ExcelOptions) {
     try {
       options.maxRowsInMemory match {
         case Some(maxRows) => {
-          val builder = StreamingReader.builder().bufferSize(maxRows)
+          val builder = StreamingReader.builder().rowCacheSize(maxRows)
           options.workbookPassword match {
             case Some(password) => builder.password(password)
             case _ =>
