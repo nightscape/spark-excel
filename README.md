@@ -184,8 +184,19 @@ df.write
 #### Data Addresses
 As you can see in the examples above,
 the location of data to read or write can be specified with the `dataAddress` option.
-Currently the following address styles are supported:
 
+The data address consists of two portions:
+* The sheet name (optional) 
+* The cell range 
+
+For example `'My Sheet'!B3:F35` will read from the sheet `My Sheet` and the cell range `B3:F35`.  
+
+Following rules apply for the sheet name:
+* The sheet name is optional and can be omitted. In that case data is read from the first sheet (the leftmost sheet).
+* If the sheet name consists of digits only (e.g. `001`), spark excel will try to find/read from sheet named `001`. In case no sheet with this name exists, it will read the sheet with index 1 (zero-based, i.e. the second sheet from the left side).
+* If you set the spark option `sheetNameIsRegex` to `true`, the sheet name will be interpreted as a regex pattern. In this case, data of all sheets matching the regex will be read. The data schema for all such sheets must be the same.
+
+Concerning the cell range following formats are supported:
 * `B3`: Start cell of the data.
   Reading will return all rows below and all columns to the right.
   Writing will start here and use as many columns and rows as required.
