@@ -16,8 +16,8 @@
 
 package dev.mauch.spark.excel.v2
 
-import org.apache.poi.ss.usermodel.{Cell, Sheet, Workbook}
 import org.apache.poi.ss.usermodel.Row.MissingCellPolicy
+import org.apache.poi.ss.usermodel.{Cell, Sheet, Workbook}
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.apache.spark.internal.Logging
 
@@ -79,11 +79,18 @@ object DataLocator {
   */
 class CellRangeAddressDataLocator(val options: ExcelOptions) extends DataLocator {
 
+  // in case of keepUndefinedRows==true DataLocator.actualReadFromSheet utilizes  Sheet.getRow(rowNum), which is not implemented
+  // in streaming reader. So we have to make sure that keepUndefinedRows==true is not combined with streaming reader
+  require(
+    if (options.keepUndefinedRows && options.maxRowsInMemory.nonEmpty) false
+    else true,
+    "maxRowsInMemory (i.e. the streaming reader) cannot be combined with keepUndefinedRows==true"
+  )
+
   override def readFrom(workbook: Workbook): Iterator[Vector[Cell]] = {
     val sheet = findSheet(workbook, sheetName)
     val rowInd = rowIndices(sheet)
     val colInd = columnIndices()
-
     actualReadFromSheet(options, sheet, rowInd, colInd)
   }
 
@@ -106,9 +113,22 @@ class CellRangeAddressDataLocator(val options: ExcelOptions) extends DataLocator
   private def columnIndices(): Range =
     dataAddress.getFirstCell.getCol.toInt to dataAddress.getLastCell.getCol.toInt
 
-  private def rowIndices(sheet: Sheet): Range =
-    (math.max(dataAddress.getFirstCell.getRow, sheet.getFirstRowNum) to
-      math.min(dataAddress.getLastCell.getRow, sheet.getLastRowNum))
+  private def rowIndices(sheet: Sheet): Range = {
+    /* issue #944: if the sheet has a faulty dimension tag the streaming reader will not know the correct value for
+        sheet.getLastRowNum(). Therefore we only use the data address to determine the row range.
+
+        For non-streaming reader the sheet.getLastRowNum() returns a valid value, so we can use it. We need to do
+        that to support keepUndefinedRows==true which iterates over the existing rows in the sheet.
+     */
+    options.maxRowsInMemory match {
+      case Some(_) =>
+        dataAddress.getFirstCell.getRow to dataAddress.getLastCell.getRow
+      case None =>
+        math.max(dataAddress.getFirstCell.getRow, sheet.getFirstRowNum) to
+          math.min(dataAddress.getLastCell.getRow, sheet.getLastRowNum)
+    }
+
+  }
 }
 
 /** Locating the data in Excel Table

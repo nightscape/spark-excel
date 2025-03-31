@@ -101,10 +101,41 @@ class TableReadSuite extends AnyFunSuite with DataFrameSuiteBase with ExcelTesti
     )
 
     assert(df.schema.fields.length == 5) // sheet 001 has 5 columns, sheet 002 has 3 columns
-    assert(df.count() == 1) // sheet 001 has 1 million rows
-    assert(
-      df.first().getString(0) == "A"
-    ) // sheet 001 contains "A" as first cell value, while sheet 002 contains  "WRONG"
+    assert(df.count() == 1) // sheet 001 has 1 row
+    assert(df.first().getString(0) == "A") // sheet 001 contains "A" as first cell value (001 has "WRONG")
+  }
+
+  for (useStreamingReader <- Seq(true, false)) {
+    test(
+      s"check handling of faulty dimension tags using streaming reader == $useStreamingReader (keepUndefinedRows=false)"
+    ) {
+      val df = readFromResources(
+        spark,
+        path = "issue_944_faulty_dimension.xlsx",
+        options = Map(
+          "dataAddress" -> "'faulty_dim'!A1",
+          "inferSchema" -> true,
+          "header" -> true,
+          "keepUndefinedRows" -> false
+        ) ++ (if (useStreamingReader) Map("maxRowsInMemory" -> "1000") else Map.empty)
+      )
+      assert(df.schema.fields.length == 5) // sheet has 5 columns
+      assert(df.count() == 2) // sheet has 2 defined rows (row 2 and 4)
+      assert(df.first().getString(0) == "A") // sheet  contains "A" as first cell value in first row
+    }
+  }
+
+  test("check handling of faulty dimension tags (keepUndefinedRows=true)") {
+    // note that keepUndefinedRows=true does not work with streaming reader
+    val df = readFromResources(
+      spark,
+      path = "issue_944_faulty_dimension.xlsx",
+      options =
+        Map("dataAddress" -> "'faulty_dim'!A1", "inferSchema" -> true, "header" -> true, "keepUndefinedRows" -> true)
+    )
+    assert(df.schema.fields.length == 5) // sheet 001 has 5 columns, sheet 002 has 3 columns
+    assert(df.count() == 3) // sheet  has row 2 and 4 defined, while row 3 is not defined => 3 rows in total (2,3,4)
+    assert(df.first().getString(0) == "A") // sheet 001 contains "A" as first cell value
   }
 
 }
