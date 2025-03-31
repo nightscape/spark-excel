@@ -18,6 +18,7 @@ package dev.mauch.spark.excel.v2
 
 import dev.mauch.spark.DataFrameSuiteBase
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.types._
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -136,6 +137,36 @@ class TableReadSuite extends AnyFunSuite with DataFrameSuiteBase with ExcelTesti
     assert(df.schema.fields.length == 5) // sheet 001 has 5 columns, sheet 002 has 3 columns
     assert(df.count() == 3) // sheet  has row 2 and 4 defined, while row 3 is not defined => 3 rows in total (2,3,4)
     assert(df.first().getString(0) == "A") // sheet 001 contains "A" as first cell value
+  }
+
+  test("read multiple sheets at once (filename as regex)") {
+    val df = readFromResources(
+      spark,
+      path = "read_multiple_sheets_at_once.xlsx",
+      options =
+        Map("sheetNameIsRegex" -> true, "dataAddress" -> "'sheet_[0-9]'!A1", "inferSchema" -> true, "header" -> true)
+    )
+
+    assert(df.schema.fields.length == 2)
+    assert(df.count() == 5) // sheet_1 has 3 rows, sheet_2 has 2 rows => 5
+    assert(df.filter(col("col_name") === "sheet_1").count() == 3)
+    assert(df.filter(col("col_name") === "sheet_2").count() == 2)
+  }
+
+  test("read multiple sheets at once (filename as regex, excel without header)") {
+    val expectedSchema =
+      StructType(List(StructField("col_name", StringType, true), StructField("col_id", StringType, true)))
+
+    val df = readFromResources(
+      spark,
+      path = "read_multiple_sheets_at_once_noheader.xlsx",
+      options =
+        Map("sheetNameIsRegex" -> true, "dataAddress" -> "'sheet_[0-9]'!A1", "inferSchema" -> false, "header" -> false),
+      schema = expectedSchema
+    )
+    assert(df.count() == 5) // sheet_1 has 3 rows, sheet_2 has 2 rows => 5
+    assert(df.filter(col("col_name") === "sheet_1").count() == 3)
+    assert(df.filter(col("col_name") === "sheet_2").count() == 2)
   }
 
 }

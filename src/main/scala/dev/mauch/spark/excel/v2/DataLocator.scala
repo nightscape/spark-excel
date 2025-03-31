@@ -43,7 +43,7 @@ trait DataLocator {
         if (r == null) { Vector.empty }
         else {
           colInd
-            .filter(_ < r.getLastCellNum())
+            .filter(_ < r.getLastCellNum)
             .map(r.getCell(_, MissingCellPolicy.CREATE_NULL_AS_BLANK))
             .toVector
         }
@@ -54,7 +54,7 @@ trait DataLocator {
         .filter(r => rowInd.contains(r.getRowNum))
         .map(r =>
           colInd
-            .filter(_ < r.getLastCellNum())
+            .filter(_ < r.getLastCellNum)
             .map(r.getCell(_, MissingCellPolicy.CREATE_NULL_AS_BLANK))
             .toVector
         )
@@ -77,7 +77,7 @@ object DataLocator {
   * @param options
   *   user specified excel option
   */
-class CellRangeAddressDataLocator(val options: ExcelOptions) extends DataLocator {
+class CellRangeAddressDataLocator(val options: ExcelOptions) extends DataLocator with Logging {
 
   // in case of keepUndefinedRows==true DataLocator.actualReadFromSheet utilizes  Sheet.getRow(rowNum), which is not implemented
   // in streaming reader. So we have to make sure that keepUndefinedRows==true is not combined with streaming reader
@@ -88,10 +88,32 @@ class CellRangeAddressDataLocator(val options: ExcelOptions) extends DataLocator
   )
 
   override def readFrom(workbook: Workbook): Iterator[Vector[Cell]] = {
-    val sheet = findSheet(workbook, sheetName)
-    val rowInd = rowIndices(sheet)
-    val colInd = columnIndices()
-    actualReadFromSheet(options, sheet, rowInd, colInd)
+
+    val sheets = findSheets(workbook, sheetName)
+    val sheetIterators = sheets.zipWithIndex.map(it => {
+      val rowInd =
+        if (it._2 == 0 || !options.header)
+          rowIndices(it._1) // on first sheet we read header row, on all others we skip it *if* they contain header
+        else
+          rowIndices(it._1).drop(1) // skip header row for all but the first sheet
+      val colInd = columnIndices()
+      logInfo(s"Reading data from sheet ${it._1.getSheetName} with row indices $rowInd and column indices $colInd")
+      actualReadFromSheet(options, it._1, rowInd, colInd)
+    })
+    sheetIterators.foldLeft(sheetIterators.head)(_ ++ _) // concatenate all iterators
+  }
+
+  private def findSheets(workbook: Workbook, name: Option[String]): Seq[Sheet] = {
+    name match {
+      case Some(n) if options.sheetNameIsRegex =>
+        val sheetNames = Range(0, workbook.getNumberOfSheets).map(index => workbook.getSheetName(index)).toList
+        val matchingSheets = sheetNames.filter(sn => sn.matches(n))
+        if (matchingSheets.isEmpty) {
+          throw new IllegalArgumentException(s"No sheet found matching regex $n")
+        }
+        matchingSheets.map(workbook.getSheet)
+      case _ => Seq(findSheet(workbook, name))
+    }
   }
 
   private def findSheet(workbook: Workbook, name: Option[String]): Sheet = {
@@ -122,8 +144,10 @@ class CellRangeAddressDataLocator(val options: ExcelOptions) extends DataLocator
      */
     options.maxRowsInMemory match {
       case Some(_) =>
+        // using streaming reader
         dataAddress.getFirstCell.getRow to dataAddress.getLastCell.getRow
       case None =>
+        // using default poi reader (load all data into memory)
         math.max(dataAddress.getFirstCell.getRow, sheet.getFirstRowNum) to
           math.min(dataAddress.getLastCell.getRow, sheet.getLastRowNum)
     }

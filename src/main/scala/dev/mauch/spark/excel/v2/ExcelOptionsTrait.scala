@@ -16,13 +16,14 @@
 
 package dev.mauch.spark.excel.v2
 
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
-import org.apache.spark.sql.catalyst.util.DateFormatter
-import org.apache.spark.sql.catalyst.util.DateTimeUtils
-import org.apache.spark.sql.catalyst.util.ParseMode
-import org.apache.spark.sql.catalyst.util.PermissiveMode
-import org.apache.spark.sql.catalyst.util.TimestampFormatter
-import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.sql.catalyst.util.{
+  CaseInsensitiveMap,
+  DateFormatter,
+  DateTimeUtils,
+  ParseMode,
+  PermissiveMode,
+  TimestampFormatter
+}
 
 import java.time.ZoneId
 import java.util.Locale
@@ -154,4 +155,10 @@ trait ExcelOptionsTrait extends Serializable {
     * memory and the data is put in a temp file instead - useful for sheets with a lot of data
     */
   val tempFileThreshold = getInt("tempFileThreshold")
+
+  // scalastyle:on
+  /** Optional parameter to specify whether the sheet name in dataAddress is a regex (for loading multiple sheets at
+    * once) or the true sheet name
+    */
+  val sheetNameIsRegex = getBool("sheetNameIsRegex", false)
 }
