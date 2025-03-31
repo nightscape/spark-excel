@@ -29,8 +29,19 @@ import java.text.ParsePosition
   */
 object PlainNumberFormat extends Format {
 
-  override def format(number: AnyRef, toAppendTo: StringBuffer, pos: FieldPosition): StringBuffer =
-    toAppendTo.append(new BigDecimal(number.toString).toPlainString)
+  override def format(number: AnyRef, toAppendTo: StringBuffer, pos: FieldPosition): StringBuffer = {
+    // Convert to BigDecimal for formatting
+    val bd = new BigDecimal(number.toString)
+    // Check if the number is an integer (scale == 0 after stripping trailing zeros)
+    val stripped = bd.stripTrailingZeros()
+    if (stripped.scale() <= 0) {
+      // It's an integer, format without decimal point
+      toAppendTo.append(stripped.toBigInteger().toString())
+    } else {
+      // It's not an integer, format as plain string
+      toAppendTo.append(bd.toPlainString)
+    }
+  }
 
   override def parseObject(source: String, pos: ParsePosition): AnyRef =
     throw new UnsupportedOperationException()

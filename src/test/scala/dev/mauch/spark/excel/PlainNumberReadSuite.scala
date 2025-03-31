@@ -74,6 +74,20 @@ object PlainNumberReadSuite {
     Row(null, null, null),
     Row(null, "abc.def", null)
   ).asJava
+
+  // Predefined data for Issue #747 tests
+  val issue747Schema = StructType(
+    List(
+      StructField("only_numbers", StringType, true),
+      StructField("numbers_and_text", StringType, true)
+    )
+  )
+
+  val issue747Data: util.List[Row] = List(
+    Row("9024523", "902"),
+    Row("1020001", "102"),
+    Row("9764342", "L906")
+  ).asJava
 }
 
 class PlainNumberReadSuite extends AnyFunSpec with DataFrameSuiteBase with Matchers {
@@ -109,5 +123,38 @@ class PlainNumberReadSuite extends AnyFunSpec with DataFrameSuiteBase with Match
       assertDataFrameEquals(expected, df)
     }
 
+    // Tests for Issue #747 - Integer columns should not have decimal points with usePlainNumberFormat=true
+    it("should not add decimal points to integer values when usePlainNumberFormat=true (Issue #747)") {
+      // Read with plain number format
+      val df = readFromResources("/spreadsheets/Issue_747_plain_number.xlsx", true, false)
+      
+      // Create expected DataFrame using predefined data
+      val expected = spark.createDataFrame(issue747Data, issue747Schema)
+      
+      // Verify against expected
+      assertDataFrameEquals(expected, df)
+    }
+
+    it("should not add decimal points to integer values when usePlainNumberFormat=false (Issue #747)") {
+      // Read with excel default format
+      val df = readFromResources("/spreadsheets/Issue_747_plain_number.xlsx", false, false)
+      
+      // Create expected DataFrame using predefined data
+      val expected = spark.createDataFrame(issue747Data, issue747Schema)
+      
+      // Verify against expected
+      assertDataFrameEquals(expected, df)
+    }
+    
+    it("should properly handle integer values with both usePlainNumberFormat settings (Issue #747)") {
+      // Read with plain number format
+      val dfWithPlain = readFromResources("/spreadsheets/Issue_747_plain_number.xlsx", true, false)
+      
+      // Read with excel default format
+      val dfWithoutPlain = readFromResources("/spreadsheets/Issue_747_plain_number.xlsx", false, false)
+      
+      // Verify both dataframes should be equal
+      assertDataFrameEquals(dfWithPlain, dfWithoutPlain)
+    }
   }
 }
