@@ -92,4 +92,19 @@ class TableReadSuite extends AnyFunSuite with DataFrameSuiteBase with ExcelTesti
     val expected = spark.createDataFrame(expectedBigCitiesData, expectedSchema)
     assertDataFrameApproximateEquals(expected, df, 0.1e-3)
   }
+
+  test("read sheet names consisting of digits only (do not interpret given sheet name as number)") {
+    val df = readFromResources(
+      spark,
+      path = "issue_942_sheetname_digits.xlsx",
+      options = Map("dataAddress" -> "'001'!A1", "inferSchema" -> true, "header" -> true, "maxRowsInMemory" -> 1000)
+    )
+
+    assert(df.schema.fields.length == 5) // sheet 001 has 5 columns, sheet 002 has 3 columns
+    assert(df.count() == 1) // sheet 001 has 1 million rows
+    assert(
+      df.first().getString(0) == "A"
+    ) // sheet 001 contains "A" as first cell value, while sheet 002 contains  "WRONG"
+  }
+
 }

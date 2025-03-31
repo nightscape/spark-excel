@@ -87,13 +87,17 @@ class CellRangeAddressDataLocator(val options: ExcelOptions) extends DataLocator
     actualReadFromSheet(options, sheet, rowInd, colInd)
   }
 
-  private def findSheet(workbook: Workbook, name: Option[String]): Sheet = name
-    .map(sn =>
-      Try(Option(workbook.getSheetAt(sn.toInt))).toOption.flatten
-        .orElse(Option(workbook.getSheet(sn)))
-        .getOrElse(throw new IllegalArgumentException(s"Unknown sheet $sn"))
-    )
-    .getOrElse(workbook.getSheetAt(0))
+  private def findSheet(workbook: Workbook, name: Option[String]): Sheet = {
+    val sheet = name
+      .map(sn =>
+        // first we try to interpret the sheet name as string, then try to convert it to a number (issue #942)
+        Option(workbook.getSheet(sn))
+          .orElse(Try(Option(workbook.getSheetAt(sn.toInt))).toOption.flatten)
+          .getOrElse(throw new IllegalArgumentException(s"Unknown sheet $sn"))
+      )
+      .getOrElse(workbook.getSheetAt(0))
+    sheet
+  }
 
   private val dataAddress = ExcelHelper(options).parsedRangeAddress()
 
