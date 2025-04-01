@@ -90,16 +90,16 @@ class CellRangeAddressDataLocator(val options: ExcelOptions) extends DataLocator
   override def readFrom(workbook: Workbook): Iterator[Vector[Cell]] = {
 
     val sheets = findSheets(workbook, sheetName)
-    val sheetIterators = sheets.zipWithIndex.map(it => {
+    val sheetIterators = sheets.zipWithIndex.map { case (sheet, idx) =>
       val rowInd =
-        if (it._2 == 0 || !options.header)
-          rowIndices(it._1) // on first sheet we read header row, on all others we skip it *if* they contain header
+        if (idx == 0 || !options.header)
+          rowIndices(sheet) // on first sheet we read header row, on all others we skip it *if* they contain header
         else
-          rowIndices(it._1).drop(1) // skip header row for all but the first sheet
+          rowIndices(sheet).drop(1) // skip header row for all but the first sheet
       val colInd = columnIndices()
-      logInfo(s"Reading data from sheet ${it._1.getSheetName} with row indices $rowInd and column indices $colInd")
-      actualReadFromSheet(options, it._1, rowInd, colInd)
-    })
+      logInfo(s"Reading data from sheet ${sheet.getSheetName} with row indices $rowInd and column indices $colInd")
+      actualReadFromSheet(options, sheet, rowInd, colInd)
+    }
     sheetIterators.foldLeft(sheetIterators.head)(_ ++ _) // concatenate all iterators
   }
 
