@@ -45,7 +45,7 @@ object PlainNumberFormat extends Format {
   override def format(number: AnyRef, toAppendTo: StringBuffer, pos: FieldPosition): StringBuffer = {
     // Convert to BigDecimal for formatting
     val bd = new BigDecimal(number.toString)
-    
+
     // Check if the number is an integer (scale == 0 after stripping trailing zeros)
     val stripped = bd.stripTrailingZeros()
     if (stripped.scale() <= 0) {

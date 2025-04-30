@@ -77,20 +77,13 @@ object PlainNumberReadSuite {
     Row(null, null, null),
     Row("#DIV/0!", "abc.def", null)
   ).asJava
-  
+
   // Predefined data for Issue #747 tests
   val issue747Schema = StructType(
-    List(
-      StructField("only_numbers", StringType, true),
-      StructField("numbers_and_text", StringType, true)
-    )
+    List(StructField("only_numbers", StringType, true), StructField("numbers_and_text", StringType, true))
   )
 
-  val issue747Data: util.List[Row] = List(
-    Row("9024523", "902"),
-    Row("1020001", "102"),
-    Row("9764342", "L906")
-  ).asJava
+  val issue747Data: util.List[Row] = List(Row("9024523", "902"), Row("1020001", "102"), Row("9764342", "L906")).asJava
 }
 
 class PlainNumberReadSuite extends AnyFunSuite with DataFrameSuiteBase with ExcelTestingUtilities {
@@ -154,14 +147,14 @@ class PlainNumberReadSuite extends AnyFunSuite with DataFrameSuiteBase with Exce
       path = "Issue_747_plain_number.xlsx",
       options = Map("usePlainNumberFormat" -> true, "inferSchema" -> false)
     )
-    
+
     // Create expected DataFrame using predefined data
     val expected = spark.createDataFrame(issue747Data, issue747Schema)
-    
+
     // Verify against expected
     assertDataFrameEquals(expected, df)
   }
-  
+
   test("integer values should not have decimal points when usePlainNumberFormat=false (Issue #747)") {
     // Read with excel default format
     val df = readFromResources(
@@ -169,14 +162,14 @@ class PlainNumberReadSuite extends AnyFunSuite with DataFrameSuiteBase with Exce
       path = "Issue_747_plain_number.xlsx",
       options = Map("usePlainNumberFormat" -> false, "inferSchema" -> false)
     )
-    
+
     // Create expected DataFrame using predefined data
     val expected = spark.createDataFrame(issue747Data, issue747Schema)
-    
+
     // Verify against expected
     assertDataFrameEquals(expected, df)
   }
-  
+
   test("integer values should be consistent with both usePlainNumberFormat settings (Issue #747)") {
     // Read with plain number format
     val dfWithPlain = readFromResources(
@@ -184,14 +177,14 @@ class PlainNumberReadSuite extends AnyFunSuite with DataFrameSuiteBase with Exce
       path = "Issue_747_plain_number.xlsx",
       options = Map("usePlainNumberFormat" -> true, "inferSchema" -> false)
     )
-    
+
     // Read with excel default format
     val dfWithoutPlain = readFromResources(
       spark,
       path = "Issue_747_plain_number.xlsx",
       options = Map("usePlainNumberFormat" -> false, "inferSchema" -> false)
     )
-    
+
     // Verify both dataframes should be equal
     assertDataFrameEquals(dfWithPlain, dfWithoutPlain)
   }
