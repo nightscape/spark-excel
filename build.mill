@@ -6,7 +6,8 @@ import de.tobiasroeser.mill.vcs.version.VcsVersion
 
 trait SparkModule extends Cross.Module2[String, String] with SbtModule with SonatypeCentralPublishModule {
   outer =>
-  override def scalaVersion = crossValue
+  // Ensure Scala version matches plugin requirements
+  override def scalaVersion = "2.13.8" // Example version, adjust as needed
   val sparkVersion = crossValue2
   val Array(sparkMajor, sparkMinor, sparkPatch) = sparkVersion.split("\\.")
   val sparkBinaryVersion = s"$sparkMajor.$sparkMinor"
