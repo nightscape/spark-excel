@@ -19,6 +19,7 @@ package dev.mauch.spark.excel
 import java.sql.{Date, Timestamp}
 import java.text.SimpleDateFormat
 
+import com.eed3si9n.ifdef.ifdef
 import org.apache.poi.ss.usermodel.{Cell, CellType, DataFormatter, DateUtil, Row => _}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._

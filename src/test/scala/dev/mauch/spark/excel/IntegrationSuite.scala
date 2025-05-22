@@ -70,11 +70,11 @@ class IntegrationSuite
       .to(List)
       .zip(inferred.schema)
       .zipWithIndex
-      .map { case ((f, sf), idx) => 
+      .map { case ((f, sf), idx) =>
         // For now, use schema-based inference to avoid data collection issues
         sf.name -> (sf.dataType match {
           case _: DecimalType => DoubleType
-          case _: NumericType => DoubleType  
+          case _: NumericType => DoubleType
           case DateType => TimestampType
           case t: DataType => t
         })
@@ -163,7 +163,7 @@ class IntegrationSuite
 
           // Simplified schema checking that works for both Spark 3.x and 4.0
           val expectedTypeMap = expectedDataTypes(inferred).toMap
-          
+
           // Check that inferred schema has reasonable types
           inferred.schema.foreach { field =>
             val expectedType = expectedTypeMap.get(field.name)

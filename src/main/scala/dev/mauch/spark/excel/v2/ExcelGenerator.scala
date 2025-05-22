@@ -40,7 +40,7 @@ class ExcelGenerator(val path: String, val dataSchema: StructType, val conf: Con
   }
 
   private def sparkToJavaTimestamp(us: Long): Timestamp = {
-    // Use simple direct conversion for both Spark versions to avoid DateTimeUtils issues  
+    // Use simple direct conversion for both Spark versions to avoid DateTimeUtils issues
     val millis = us / 1000
     val nanos = ((us % 1000000) * 1000).toInt
     val ts = new Timestamp(millis)

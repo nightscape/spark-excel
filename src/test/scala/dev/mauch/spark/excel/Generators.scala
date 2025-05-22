@@ -65,14 +65,14 @@ trait Generators {
     ZoneId.systemDefault().getRules.getTransitions.asScala.map(_.getInstant.truncatedTo(ChronoUnit.DAYS))
   def isDstTransitionDay(instant: Instant): Boolean = dstTransitionDays.contains(instant.truncatedTo(ChronoUnit.DAYS))
   // Generate java.sql.Timestamp for both Spark 3.x and 4.0 compatibility
-  val timestampGen: Gen[java.sql.Timestamp] = 
+  val timestampGen: Gen[java.sql.Timestamp] =
     Gen
       .chooseNum[Long](0L, (new java.util.Date).getTime + 1000000)
       .map(new java.sql.Timestamp(_))
       .filterNot(d => isDstTransitionDay(d.toInstant))
 
   // Generate java.sql.Date for both Spark 3.x and 4.0 compatibility
-  val dateGen: Gen[java.sql.Date] = 
+  val dateGen: Gen[java.sql.Date] =
     Gen
       .chooseNum[Long](0L, (new java.util.Date).getTime + 1000000)
       .map(new java.sql.Date(_))
@@ -141,11 +141,30 @@ trait Generators {
       aDate <- dateGen
       aDateOption <- Gen.option(dateGen)
     } yield ExampleData(
-      aBoolean, aBooleanOption, aByte, aByteOption, aShort, aShortOption,
-      anInt, anIntOption, aLong, aLongOption, aFloat, aFloatOption,
-      aDouble, aDoubleOption, aBigDecimal, aBigDecimalOption,
-      aJavaBigDecimal, aJavaBigDecimalOption, aString, aStringOption,
-      aTimestamp, aTimestampOption, aDate, aDateOption
+      aBoolean,
+      aBooleanOption,
+      aByte,
+      aByteOption,
+      aShort,
+      aShortOption,
+      anInt,
+      anIntOption,
+      aLong,
+      aLongOption,
+      aFloat,
+      aFloatOption,
+      aDouble,
+      aDoubleOption,
+      aBigDecimal,
+      aBigDecimalOption,
+      aJavaBigDecimal,
+      aJavaBigDecimalOption,
+      aString,
+      aStringOption,
+      aTimestamp,
+      aTimestampOption,
+      aDate,
+      aDateOption
     )
   }
 

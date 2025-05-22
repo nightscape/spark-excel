@@ -4,6 +4,8 @@ import Assembly._
 import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.4.0`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
 
+case class SparkVersionSpecific(flag: String, lowerVersion: Option[String] = None, upperVersion: Option[String] = None)
+
 trait SparkModule extends Cross.Module2[String, String] with SbtModule with SonatypeCentralPublishModule {
   outer =>
   override def scalaVersion = crossValue
@@ -22,48 +24,57 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
 
   override def millSourcePath = super.millSourcePath / os.up
 
-  object LowerOrEqual {
-    def unapply(otherVersion: String): Boolean = otherVersion match {
-      case s"${sparkMaj}.${sparkMin}.${sparkPat}" =>
-        (sparkMaj.toInt < sparkMajor.toInt) ||
-        (sparkMaj == sparkMajor && (sparkMin.toInt < sparkMinor.toInt || (sparkMin == sparkMinor && sparkPat.toInt <= sparkPatch.toInt)))
-      case s"${sparkMaj}.${sparkMin}" =>
-        (sparkMaj.toInt < sparkMajor.toInt) ||
-        (sparkMaj == sparkMajor && sparkMin.toInt <= sparkMinor.toInt)
-      case sparkMaj => sparkMaj.toInt <= sparkMajor.toInt
+  override def scalacPluginIvyDeps = T {
+    super.scalacPluginIvyDeps() ++ Agg(ivy"com.eed3si9n.ifdef::ifdef-plugin:0.4.1")
+  }
+
+  override def scalacOptions = T {
+    val baseOptions = super.scalacOptions()
+
+    val sparkVersionSpecificFlags = Seq(
+      // Date/Time handling
+      SparkVersionSpecific("legacyTimestampStringCleaning", lowerVersion = Some("3.0.0"), upperVersion = Some("3.1.0")),
+      SparkVersionSpecific("stringToDateZoneIdSupport", upperVersion = Some("3.2.0")),
+      SparkVersionSpecific("dateFormatter:WithZoneId", lowerVersion = Some("3.0.0"), upperVersion = Some("3.2.0")),
+
+      // Filter handling
+      SparkVersionSpecific("filterHandling:CsvBased", upperVersion = Some("3.1.0")),
+      SparkVersionSpecific("filterHandling:Structured", lowerVersion = Some("3.1.0")),
+      SparkVersionSpecific("catalystFilterPushdown", lowerVersion = Some("3.3.0")),
+      SparkVersionSpecific("withFilters", lowerVersion = Some("3.0.0"), upperVersion = Some("3.3.0")),
+
+      // File handling
+      SparkVersionSpecific("useFileSourceOptions", lowerVersion = Some("3.4.0")),
+      SparkVersionSpecific("hasFileSourceOptionsMethod", lowerVersion = Some("3.4.2")),
+
+      // Write API
+      SparkVersionSpecific("writebuilderReturnsWrite", lowerVersion = Some("3.2.0")),
+      SparkVersionSpecific("sparkFileWriteTrait", lowerVersion = Some("3.2.0")),
+      SparkVersionSpecific("exposedPathProperty", lowerVersion = Some("3.2.0")),
+
+      // Breaking changes
+      SparkVersionSpecific("badRecordPartialResultsOption", upperVersion = Some("3.4.2"))
+    )
+
+    def versionMatches(spec: SparkVersionSpecific): Boolean = {
+      val lowerMatch = spec.lowerVersion.forall(sparkVersion >= _)
+      val upperMatch = spec.upperVersion.forall(sparkVersion < _)
+      lowerMatch && upperMatch
     }
-  }
-  object HigherOrEqual {
-    def unapply(otherVersion: String): Boolean = otherVersion match {
-      case s"${sparkMaj}.${sparkMin}.${sparkPat}" =>
-        (sparkMaj.toInt > sparkMajor.toInt) ||
-        (sparkMaj == sparkMajor && (sparkMin.toInt > sparkMinor.toInt || (sparkMin == sparkMinor && sparkPat.toInt >= sparkPatch.toInt)))
-      case s"${sparkMaj}.${sparkMin}" =>
-        (sparkMaj.toInt > sparkMajor.toInt) ||
-        (sparkMaj == sparkMajor && sparkMin.toInt >= sparkMinor.toInt)
-      case sparkMaj => sparkMaj.toInt >= sparkMajor.toInt
+
+    val featureFlags = sparkVersionSpecificFlags.filter(versionMatches).map(_.flag)
+
+    val allFlags = featureFlags.map(flag =>
+      if (scalaVersion().startsWith("2.")) s"com.eed3si9n.ifdef.declare:$flag"
+      else s"com.eed3si9n.ifdef.declare:$flag"
+    )
+    val ifdefOptions = if (scalaVersion().startsWith("2.")) {
+      allFlags.flatMap(flag => Seq("-Xmacro-settings", flag))
+    } else {
+      allFlags.map(flag => s"-Xmacro-settings:$flag")
     }
-  }
 
-  def sparkVersionSpecificSources = T {
-    val versionSpecificDirs = os.list(mill.api.WorkspaceRoot.workspaceRoot / "src" / "main")
-    val Array(sparkMajor, sparkMinor, sparkPatch) = sparkVersion.split("\\.")
-    val sparkBinaryVersion = s"$sparkMajor.$sparkMinor"
-
-    // For Spark 4.0+, prefer 4.0_and_up over older version ranges
-    val matchingDirs = versionSpecificDirs.filter(_.last match {
-      case "scala" => true
-      case `sparkBinaryVersion` => true
-      case s"${LowerOrEqual()}_and_up" => true
-      case s"${LowerOrEqual()}_to_${HigherOrEqual()}" => true
-      case _ => false
-    })
-
-    // Return all matching directories - let version-specific files be prioritized by Mill's source ordering
-    matchingDirs
-  }
-  override def sources = T.sources {
-    super.sources() ++ sparkVersionSpecificSources().map(PathRef(_))
+    baseOptions ++ ifdefOptions
   }
 
   override def docSources = T.sources(Seq[PathRef]())
@@ -127,7 +138,8 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
       ivy"com.github.virtuald:curvesapi:1.08",
       ivy"commons-codec:commons-codec:1.19.0",
       ivy"org.apache.commons:commons-math3:3.6.1",
-      ivy"org.scala-lang.modules::scala-collection-compat:2.13.0"
+      ivy"org.scala-lang.modules::scala-collection-compat:2.13.0",
+      ivy"com.eed3si9n.ifdef::ifdef-annotation:0.4.1"
     )
     if (sparkVersion >= "3.3.0") {
       base ++ Agg(ivy"org.apache.logging.log4j:log4j-core:2.24.3")
