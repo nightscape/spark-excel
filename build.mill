@@ -71,12 +71,10 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
     Rule.Relocate("org.apache.commons.compress.**", "shadeio.commons.compress.@1")
   )
 
-  override def extraPublish = Seq(PublishInfo(assembly(), classifier = None, ivyConfig = "compile"))
-
-  def publishArtifacts: T[PublishModule.PublishData] = Task {
-    val publishData = super.publishArtifacts()
-    publishData.copy(payload = publishData.payload.filterNot { case (ref, name) => ref.toString.contains("jar.dest") })
-  }
+  override def extraPublish = Seq(
+    PublishInfo(assembly(), classifier = None, ivyConfig = "compile"),
+    PublishInfo(jar(), classifier = Some("thin"), ivyConfig = "compile")
+  )
 
   override def sonatypeCentralReadTimeout: T[Int] = 600000
   override def sonatypeCentralAwaitTimeout: T[Int] = 1200 * 1000
