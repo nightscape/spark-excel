@@ -112,4 +112,59 @@ class KeepUndefinedRowsSuite extends AnyFunSuite with DataFrameSuiteBase with Ex
     val expected = spark.createDataFrame(expectedData_Issue162, userDefined_Issue162)
     assertDataFrameEquals(expected, df)
   }
+
+  for (sheetName <- Seq("blank_row", "space_row")) {
+    test(s"#965 handling of NULL/BLANK column values (streamingReader, keepUndefinedRows==false, sheet=$sheetName)") {
+      val df = readFromResources(
+        spark,
+        path = "issue_965_blank_rows.xlsx",
+        options = Map(
+          "dataAddress" -> s"'${sheetName}'!A1",
+          "inferSchema" -> true,
+          "header" -> true,
+          "maxRowsInMemory" -> "1000",
+          "keepUndefinedRows" -> false
+        )
+      )
+      assert(df.schema.fields.length == 5) // sheet 001 has 5 columns
+      /*
+        sheet "blank_row" has row 2 and 4 defined, while row 3 is not defined in excel xml and row 5 contains empty cells in excel xml
+        => 2 rows in total (prior the fix row 5 was added as well)
+        sheet "space_row" has row 2 and 4 defined with some values, row 3 contains just a whitespace in A3
+        => 3 rows in total (just to test that a single whitespace is handled correctly)
+       */
+      if (sheetName == "blank_row") {
+        assert(df.count() == 2)
+      } else {
+        assert(df.count() == 3)
+      }
+    }
+  }
+
+  for (keepUndefinedRows <- Seq(false, true)) {
+    test(s"#965 handling of NULL/BLANK column values (NON-streaming-Reader, keepUndefinedRows==$keepUndefinedRows)") {
+      val df = readFromResources(
+        spark,
+        path = "issue_965_blank_rows.xlsx",
+        options = Map(
+          "dataAddress" -> s"'blank_row'!A1",
+          "inferSchema" -> true,
+          "header" -> true,
+          "keepUndefinedRows" -> keepUndefinedRows
+        )
+      )
+      assert(df.schema.fields.length == 5) // sheet 001 has 5 columns
+      /*
+        sheet "blank_row" has row 2 and 4 defined, while row 3 is not defined in excel xml and row 5 contains empty cells in excel xml
+       * keepUndefinedRows == true => 4 rows in total
+       * keepUndefinedRows == false => 2 rows in total
+       */
+      if (keepUndefinedRows) {
+        assert(df.count() == 4)
+      } else {
+        assert(df.count() == 2)
+      }
+    }
+  }
+
 }

@@ -17,7 +17,7 @@
 package dev.mauch.spark.excel.v2
 
 import org.apache.poi.ss.usermodel.Row.MissingCellPolicy
-import org.apache.poi.ss.usermodel.{Cell, Sheet, Workbook}
+import org.apache.poi.ss.usermodel.{Cell, CellType, Sheet, Workbook}
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.apache.spark.internal.Logging
 
@@ -58,6 +58,7 @@ trait DataLocator {
             .map(r.getCell(_, MissingCellPolicy.CREATE_NULL_AS_BLANK))
             .toVector
         )
+        .filter(_.exists(_.getCellType != CellType.BLANK)) // #965 filter rows that are completely empty
     }
   }
 }
