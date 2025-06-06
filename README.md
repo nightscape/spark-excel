@@ -211,6 +211,34 @@ Concerning the cell range following formats are supported:
   Writing will only write within the current range of the table.
   No growing of the table will be performed. PRs to change this are welcome.
 
+#### Handling of Empty Rows, implementation details
+
+An empty row in excel is defined as a row where all cells in this row do not contain any value. The default behavior is to skip empty rows. If you want to read such rows you need to set the option ``keepEmptyRows`` to ``true``. This is only possible if you do *not* use the streaming reader (``maxRowsInMemory`` is not set).
+
+Technically excel xlsx files are zipped XML files. There an empty row could be represented in two ways (see issue #965 fro details:
+1. The row is not present in the XML at all (no `<row>` element for that row exists).
+2. The row is present in the XML, but all cells in this row are empty (`<row>` element exists for that row, but the `<c>` element does not contain a `<value>` element).
+
+In the Excel UI both rows look the same.
+
+Prior PR #966 handled such cases differently:
+* If the row was not present in the XML, it was skipped.
+* If the row was present in the XML, but all cells were empty, it was read as a row with all columns set to null/blank.
+
+With PR #966 the handling of empty rows has been unified.
+
+Why does ``keepEmptyRows`` = ``true`` (currently) does not work for streaming reader? The streaming reader reads the defined `<row>` tags and just filters those that are basically empty. So we could detect missing rows (e.g. we read row 5, then 7, so we know that 6 is missing) and just add empty rows in between. Prerequisite is that the rows are ordered by their row number.
+
+According to the [excel standard](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-oe376/854bdd50-480a-4c15-a9da-4331176452e7), the row order is not defined, but it seems that in reality the elements are ordered:
+```
+b.   The standard does not define any order requirements for rows.
+
+In Office, rows must appear in ascending order.
+```
+
+In the meantime you could implement such a behavior on your own by adding the row number as a column to your DataFrame (``columnNameOfRowNumber`` option) and then add rows for the missing row numbers. 
+
+
 ### Excel API based on DataSourceV2
 The V2 API offers you several improvements when it comes to file and folder handling.
 and works in a very similar way than data sources like csv and parquet.
