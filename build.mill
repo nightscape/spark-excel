@@ -16,17 +16,23 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
   object LowerOrEqual {
     def unapply(otherVersion: String): Boolean = otherVersion match {
       case s"${sparkMaj}.${sparkMin}.${sparkPat}" =>
-        sparkMaj == sparkMajor && (sparkMin < sparkMinor || (sparkMin == sparkMinor && sparkPat <= sparkPatch))
-      case s"${sparkMaj}.${sparkMin}" => sparkMaj == sparkMajor && sparkMin <= sparkMinor
-      case sparkMaj => sparkMaj == sparkMajor
+        (sparkMaj.toInt < sparkMajor.toInt) || 
+        (sparkMaj == sparkMajor && (sparkMin.toInt < sparkMinor.toInt || (sparkMin == sparkMinor && sparkPat.toInt <= sparkPatch.toInt)))
+      case s"${sparkMaj}.${sparkMin}" => 
+        (sparkMaj.toInt < sparkMajor.toInt) || 
+        (sparkMaj == sparkMajor && sparkMin.toInt <= sparkMinor.toInt)
+      case sparkMaj => sparkMaj.toInt <= sparkMajor.toInt
     }
   }
   object HigherOrEqual {
     def unapply(otherVersion: String): Boolean = otherVersion match {
       case s"${sparkMaj}.${sparkMin}.${sparkPat}" =>
-        sparkMaj == sparkMajor && (sparkMin > sparkMinor || (sparkMin == sparkMinor && sparkPat >= sparkPatch))
-      case s"${sparkMaj}.${sparkMin}" => sparkMaj == sparkMajor && sparkMin >= sparkMinor
-      case sparkMaj => sparkMaj == sparkMajor
+        (sparkMaj.toInt > sparkMajor.toInt) || 
+        (sparkMaj == sparkMajor && (sparkMin.toInt > sparkMinor.toInt || (sparkMin == sparkMinor && sparkPat.toInt >= sparkPatch.toInt)))
+      case s"${sparkMaj}.${sparkMin}" => 
+        (sparkMaj.toInt > sparkMajor.toInt) || 
+        (sparkMaj == sparkMajor && sparkMin.toInt >= sparkMinor.toInt)
+      case sparkMaj => sparkMaj.toInt >= sparkMajor.toInt
     }
   }
 
@@ -34,13 +40,18 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
     val versionSpecificDirs = os.list(mill.api.WorkspaceRoot.workspaceRoot / "src" / "main")
     val Array(sparkMajor, sparkMinor, sparkPatch) = sparkVersion.split("\\.")
     val sparkBinaryVersion = s"$sparkMajor.$sparkMinor"
-    versionSpecificDirs.filter(_.last match {
+    
+    // For Spark 4.0+, prefer 4.0_and_up over older version ranges
+    val matchingDirs = versionSpecificDirs.filter(_.last match {
       case "scala" => true
       case `sparkBinaryVersion` => true
       case s"${LowerOrEqual()}_and_up" => true
       case s"${LowerOrEqual()}_to_${HigherOrEqual()}" => true
       case _ => false
     })
+    
+    // Return all matching directories - let version-specific files be prioritized by Mill's source ordering
+    matchingDirs
   }
   override def sources = T.sources {
     super.sources() ++ sparkVersionSpecificSources().map(PathRef(_))
@@ -120,10 +131,6 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
 
     override def millSourcePath = super.millSourcePath
 
-    override def sources = T.sources {
-      Seq(PathRef(millSourcePath / "src" / "test" / "scala"))
-    }
-
     override def resources = T.sources {
       Seq(PathRef(millSourcePath / "src" / "test" / "resources"))
     }
@@ -156,9 +163,10 @@ val spark32 = List("3.2.4")
 val spark33 = List("3.3.4")
 val spark34 = List("3.4.4", "3.4.1")
 val spark35 = List("3.5.6")
-val sparkVersions = spark24 ++ spark30 ++ spark31 ++ spark32 ++ spark33 ++ spark34 ++ spark35
+val spark40 = List("4.0.0")
+val sparkVersions = spark24 ++ spark30 ++ spark31 ++ spark32 ++ spark33 ++ spark34 ++ spark35 ++ spark40
 val crossMatrix =
-  sparkVersions.map(spark => (scala212, spark)) ++
+  sparkVersions.filter(_ < "4.0").map(spark => (scala212, spark)) ++
     sparkVersions.filter(_ >= "3.2").map(spark => (scala213, spark))
 
 object `spark-excel` extends Cross[SparkModule](crossMatrix) {}

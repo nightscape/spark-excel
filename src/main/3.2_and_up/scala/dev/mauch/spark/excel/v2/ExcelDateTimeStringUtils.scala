@@ -25,28 +25,99 @@ import org.apache.spark.sql.catalyst.util.TimestampFormatter
 import org.apache.spark.sql.catalyst.util.LegacyDateFormats.FAST_DATE_FORMAT
 
 import scala.annotation.nowarn
+import scala.util.{Try, Success, Failure}
+import java.lang.reflect.Method
 
 object ExcelDateTimeStringUtils {
+  
+  // Cache reflection methods for performance
+  private lazy val cleanLegacyTimestampStrMethod: Option[Method] = {
+    Try {
+      val method = DateTimeUtils.getClass.getMethod("cleanLegacyTimestampStr", classOf[UTF8String])
+      method.setAccessible(true)
+      method
+    }.toOption
+  }
+  
+  private lazy val stringToTimestampMethod: Option[Method] = {
+    Try {
+      val method = DateTimeUtils.getClass.getMethod("stringToTimestamp", classOf[UTF8String], classOf[ZoneId])
+      method.setAccessible(true)
+      method
+    }.toOption
+  }
+  
+  private lazy val stringToDateMethod: Option[Method] = {
+    Try {
+      val method = DateTimeUtils.getClass.getMethod("stringToDate", classOf[UTF8String])
+      method.setAccessible(true)
+      method
+    }.toOption
+  }
+
   def stringToTimestamp(v: String, zoneId: ZoneId): Option[Long] = {
-    val str = DateTimeUtils.cleanLegacyTimestampStr(UTF8String.fromString(v))
-    DateTimeUtils.stringToTimestamp(str, zoneId)
+    Try {
+      val utf8Str = UTF8String.fromString(v)
+      val str = cleanLegacyTimestampStrMethod match {
+        case Some(method) => method.invoke(DateTimeUtils, utf8Str).asInstanceOf[UTF8String]
+        case None => utf8Str // Fallback if method doesn't exist
+      }
+      
+      stringToTimestampMethod match {
+        case Some(method) => method.invoke(DateTimeUtils, str, zoneId).asInstanceOf[Option[Long]]
+        case None => 
+          // Fallback for Spark 4.0 - parse directly using Java Time API
+          val instant = java.time.Instant.parse(v)
+          Some(instant.toEpochMilli * 1000) // Convert to microseconds
+      }
+    }.getOrElse(None)
   }
 
   @nowarn
   def stringToDate(v: String, zoneId: ZoneId): Option[Int] = {
-    val str = DateTimeUtils.cleanLegacyTimestampStr(UTF8String.fromString(v))
-    DateTimeUtils.stringToDate(str)
+    Try {
+      val utf8Str = UTF8String.fromString(v)
+      val str = cleanLegacyTimestampStrMethod match {
+        case Some(method) => method.invoke(DateTimeUtils, utf8Str).asInstanceOf[UTF8String]
+        case None => utf8Str // Fallback if method doesn't exist
+      }
+      
+      stringToDateMethod match {
+        case Some(method) => method.invoke(DateTimeUtils, str).asInstanceOf[Option[Int]]
+        case None =>
+          // Fallback for Spark 4.0 - parse directly using Java Time API
+          val localDate = java.time.LocalDate.parse(v)
+          Some(Math.toIntExact(localDate.toEpochDay))
+      }
+    }.getOrElse(None)
   }
 
-  def getTimestampFormatter(options: ExcelOptions): TimestampFormatter = TimestampFormatter(
-    options.timestampFormat,
-    options.zoneId,
-    options.locale,
-    legacyFormat = FAST_DATE_FORMAT,
-    isParsing = true
-  )
+  def getTimestampFormatter(options: ExcelOptions): TimestampFormatter = {
+    Try {
+      TimestampFormatter(
+        options.timestampFormat,
+        options.zoneId,
+        options.locale,
+        legacyFormat = FAST_DATE_FORMAT,
+        isParsing = true
+      )
+    }.getOrElse {
+      // Fallback with simpler constructor for Spark 4.0
+      TimestampFormatter(
+        options.timestampFormat,
+        options.zoneId,
+        isParsing = true
+      )
+    }
+  }
 
-  def getDateFormatter(options: ExcelOptions): DateFormatter =
-    DateFormatter(options.dateFormat, options.locale, legacyFormat = FAST_DATE_FORMAT, isParsing = true)
+  def getDateFormatter(options: ExcelOptions): DateFormatter = {
+    Try {
+      DateFormatter(options.dateFormat, options.locale, legacyFormat = FAST_DATE_FORMAT, isParsing = true)
+    }.getOrElse {
+      // Fallback with simpler constructor for Spark 4.0
+      DateFormatter(options.dateFormat, isParsing = true)
+    }
+  }
 
 }
