@@ -53,8 +53,11 @@ class ExcelGenerator(val path: String, val dataSchema: StructType, val conf: Con
       options.maxRowsInMemory match {
         case Some(maxRows) =>
           // POI 5.x validates rowAccessWindowSize must be > 0 or -1
-          val validMaxRows = if (maxRows <= 0) -1 else maxRows
-          new SXSSFWorkbook(validMaxRows)
+          // Throw exception for invalid values other than legitimate cases
+          if (maxRows < -1 || maxRows == 0) {
+            throw new IllegalArgumentException(s"maxRowsInMemory must be positive or -1 for unlimited, got: $maxRows")
+          }
+          new SXSSFWorkbook(maxRows)
         case _ => new XSSFWorkbook()
       }
     } else {
