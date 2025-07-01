@@ -10,6 +10,15 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
   val sparkVersion = crossValue2
   val Array(sparkMajor, sparkMinor, sparkPatch) = sparkVersion.split("\\.")
   val sparkBinaryVersion = s"$sparkMajor.$sparkMinor"
+  
+  // Set Java target version based on Spark version requirements
+  override def javacOptions = T {
+    if (sparkVersion >= "4.0.0") {
+      Seq("-target", "17", "-source", "17")
+    } else {
+      Seq("-target", "11", "-source", "11")  
+    }
+  }
 
   override def millSourcePath = super.millSourcePath / os.up
 
@@ -136,6 +145,21 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
     }
 
     def scalaVersion = outer.scalaVersion()
+
+    // Add JVM options for Spark 4.0+ to handle Java module restrictions
+    override def forkArgs = T {
+      if (sparkVersion >= "4.0.0") {
+        Seq(
+          "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED",
+          "--add-opens", "java.base/java.nio=ALL-UNNAMED", 
+          "--add-opens", "java.base/java.util=ALL-UNNAMED",
+          "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+          "--add-opens", "java.base/sun.util.calendar=ALL-UNNAMED"
+        )
+      } else {
+        Seq()
+      }
+    }
 
     def repositoriesTask = T.task {
       super.repositoriesTask() ++ Seq(MavenRepository("https://jitpack.io"))
