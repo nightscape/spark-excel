@@ -34,42 +34,27 @@ class ExcelGenerator(val path: String, val dataSchema: StructType, val conf: Con
 
   // Compatibility methods for date/time conversion that work across Spark versions
   private def sparkToJavaDate(daysSinceEpoch: Int): Date = {
-    try {
-      // Try to use Spark's DateTimeUtils if available (Spark < 4.0)
-      val dateTimeUtilsClass = Class.forName("org.apache.spark.sql.catalyst.util.DateTimeUtils$")
-      val dateTimeUtilsObject = dateTimeUtilsClass.getField("MODULE$").get(null)
-      val toJavaDateMethod = dateTimeUtilsClass.getMethod("toJavaDate", classOf[Int])
-      toJavaDateMethod.invoke(dateTimeUtilsObject, java.lang.Integer.valueOf(daysSinceEpoch)).asInstanceOf[Date]
-    } catch {
-      case _: Exception =>
-        // Fallback implementation for Spark 4.0+
-        val localDate = LocalDate.ofEpochDay(daysSinceEpoch.toLong)
-        Date.valueOf(localDate)
-    }
+    // Use simple direct conversion for both Spark versions to avoid DateTimeUtils issues
+    val localDate = LocalDate.ofEpochDay(daysSinceEpoch.toLong)
+    Date.valueOf(localDate)
   }
 
   private def sparkToJavaTimestamp(us: Long): Timestamp = {
-    try {
-      // Try to use Spark's DateTimeUtils if available (Spark < 4.0)
-      val dateTimeUtilsClass = Class.forName("org.apache.spark.sql.catalyst.util.DateTimeUtils$")
-      val dateTimeUtilsObject = dateTimeUtilsClass.getField("MODULE$").get(null)
-      val toJavaTimestampMethod = dateTimeUtilsClass.getMethod("toJavaTimestamp", classOf[Long])
-      toJavaTimestampMethod.invoke(dateTimeUtilsObject, java.lang.Long.valueOf(us)).asInstanceOf[Timestamp]
-    } catch {
-      case _: Exception =>
-        // Fallback implementation for Spark 4.0+
-        val millis = us / 1000
-        val nanos = ((us % 1000000) * 1000).toInt
-        val ts = new Timestamp(millis)
-        ts.setNanos(nanos)
-        ts
-    }
+    // Use simple direct conversion for both Spark versions to avoid DateTimeUtils issues  
+    val millis = us / 1000
+    val nanos = ((us % 1000000) * 1000).toInt
+    val ts = new Timestamp(millis)
+    ts.setNanos(nanos)
+    ts
   }
   /* Prepare target Excel workbook, sheet and where to write to */
   private val wb: Workbook = {
     if (options.fileExtension.toLowerCase == "xlsx") {
       options.maxRowsInMemory match {
-        case Some(maxRows) => new SXSSFWorkbook(maxRows)
+        case Some(maxRows) =>
+          // POI 5.x validates rowAccessWindowSize must be > 0 or -1
+          val validMaxRows = if (maxRows <= 0) -1 else maxRows
+          new SXSSFWorkbook(validMaxRows)
         case _ => new XSSFWorkbook()
       }
     } else {

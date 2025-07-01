@@ -51,11 +51,11 @@ case class ExampleData(
   aJavaBigDecimalOption: Option[java.math.BigDecimal],
   aString: String,
   aStringOption: Option[String],
-  // Use Any type to support both java.sql types (Spark 3.x) and String types (Spark 4.0)
-  aTimestamp: Any,
-  aTimestampOption: Option[Any],
-  aDate: Any,
-  aDateOption: Option[Any]
+  // Use Timestamp/Date types for Spark 4.0 compatibility - encoders handle java.sql types properly
+  aTimestamp: java.sql.Timestamp,
+  aTimestampOption: Option[java.sql.Timestamp],
+  aDate: java.sql.Date,
+  aDateOption: Option[java.sql.Date]
 )
 
 trait Generators {
@@ -64,40 +64,19 @@ trait Generators {
   private val dstTransitionDays =
     ZoneId.systemDefault().getRules.getTransitions.asScala.map(_.getInstant.truncatedTo(ChronoUnit.DAYS))
   def isDstTransitionDay(instant: Instant): Boolean = dstTransitionDays.contains(instant.truncatedTo(ChronoUnit.DAYS))
-  // Runtime detection of Spark version for compatibility
-  private lazy val isSpark4: Boolean = org.apache.spark.SPARK_VERSION.startsWith("4.")
-
-  // Generate appropriate timestamp types based on Spark version
-  val timestampGen: Gen[Any] = if (isSpark4) {
-    // For Spark 4.0, use string representations to avoid DateTimeUtils issues
+  // Generate java.sql.Timestamp for both Spark 3.x and 4.0 compatibility
+  val timestampGen: Gen[java.sql.Timestamp] = 
     Gen
       .chooseNum[Long](0L, (new java.util.Date).getTime + 1000000)
       .map(new java.sql.Timestamp(_))
       .filterNot(d => isDstTransitionDay(d.toInstant))
-      .map(_.toString)
-  } else {
-    // For Spark 3.x, use java.sql.Timestamp
-    Gen
-      .chooseNum[Long](0L, (new java.util.Date).getTime + 1000000)
-      .map(new java.sql.Timestamp(_))
-      .filterNot(d => isDstTransitionDay(d.toInstant))
-  }
 
-  // Generate appropriate date types based on Spark version  
-  val dateGen: Gen[Any] = if (isSpark4) {
-    // For Spark 4.0, use string representations to avoid DateTimeUtils issues
+  // Generate java.sql.Date for both Spark 3.x and 4.0 compatibility
+  val dateGen: Gen[java.sql.Date] = 
     Gen
       .chooseNum[Long](0L, (new java.util.Date).getTime + 1000000)
       .map(new java.sql.Date(_))
       .filterNot(d => isDstTransitionDay(d.toLocalDate.atStartOfDay(ZoneOffset.UTC).toInstant))
-      .map(_.toString)
-  } else {
-    // For Spark 3.x, use java.sql.Date
-    Gen
-      .chooseNum[Long](0L, (new java.util.Date).getTime + 1000000)
-      .map(new java.sql.Date(_))
-      .filterNot(d => isDstTransitionDay(d.toLocalDate.atStartOfDay(ZoneOffset.UTC).toInstant))
-  }
 
   // Legacy Arbitrary instances for backward compatibility (not used in Spark 4.0)
   implicit val arbitraryDateFourDigits: Arbitrary[Date] = Arbitrary[java.sql.Date](
