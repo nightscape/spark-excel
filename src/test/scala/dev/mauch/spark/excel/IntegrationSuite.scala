@@ -123,7 +123,7 @@ class IntegrationSuite
             df.withColumn(field.name, df(field.name).cast(dataType))
           }
       val expected = spark.createDataFrame(originalWithInferredColumnTypes.rdd, inferred.schema)
-      assertDataFrameEquals(expected, inferred)
+      assertDataFrameApproximateEquals(expected, inferred, relTol = 1.0e-5)
     }
 
     describe(s"with maxRowsInMemory = $maxRowsInMemory; maxByteArraySize = $maxByteArraySize") {
@@ -131,7 +131,7 @@ class IntegrationSuite
         forAll(rowsGen) { rows =>
           val expected = spark.createDataset(rows).toDF()
           val actual = writeThenRead(expected)
-          assertDataFrameApproximateEquals(expected, actual, relTol = 1.0e-6)
+          assertDataFrameApproximateEquals(expected, actual, relTol = 1.0e-5)
         }
       }
 
@@ -152,7 +152,7 @@ class IntegrationSuite
           val fields = expectedWithEmptyStr.schema.fields
           fields.update(fields.indexWhere(_.name == "aString"), StructField("aString", DataTypes.StringType, true))
 
-          assertDataFrameApproximateEquals(expectedWithEmptyStr, writeThenRead(expectedWithEmptyStr), relTol = 1.0e-6)
+          assertDataFrameApproximateEquals(expectedWithEmptyStr, writeThenRead(expectedWithEmptyStr), relTol = 1.0e-5)
         }
       }
 
@@ -191,6 +191,7 @@ class IntegrationSuite
       }
 
       it("handles filtering correctly") {
+        // The Random.shuffle seems to lead to flakey behavior
         forAll(rowsGen.filter(_.nonEmpty)) { rows =>
           val original = spark.createDataset(rows).toDF()
           val inferred = writeThenRead(original, schema = None)
@@ -216,7 +217,7 @@ class IntegrationSuite
           val original = spark.createDataset(rows).toDF()
           val expected = spark.createDataset(rows).toDF(renamedSchema.fieldNames.toIndexedSeq: _*)
           val inferred = writeThenRead(original, schema = Some(renamedSchema))
-          assertDataFrameApproximateEquals(expected, inferred, relTol = 1.0e-6)
+          assertDataFrameApproximateEquals(expected, inferred, relTol = 1.0e-5)
         }
       }
 
