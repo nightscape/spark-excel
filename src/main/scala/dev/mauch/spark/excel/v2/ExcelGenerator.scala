@@ -58,7 +58,7 @@ class ExcelGenerator(val path: String, val dataSchema: StructType, val conf: Con
             throw new IllegalArgumentException(s"maxRowsInMemory must be positive or -1 for unlimited, got: $maxRows")
           }
           new SXSSFWorkbook(maxRows)
-        case _ => new XSSFWorkbook()
+        case None => new XSSFWorkbook()
       }
     } else {
       new HSSFWorkbook()
