@@ -146,15 +146,15 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
 
     def scalaVersion = outer.scalaVersion()
 
-    // Add JVM options for Spark 4.0+ to handle Java module restrictions
+    // Add JVM options for Spark 3.0+ to handle Java module restrictions (JAVA 11+)
     override def forkArgs = T {
-      if (sparkVersion >= "4.0.0") {
+      if (sparkVersion >= "3.0.0") {
         Seq(
-          "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED",
-          "--add-opens", "java.base/java.nio=ALL-UNNAMED", 
-          "--add-opens", "java.base/java.util=ALL-UNNAMED",
+          "-XX:+IgnoreUnrecognizedVMOptions",
+          "--add-exports", "java.base/sun.nio.ch=ALL-UNNAMED",
+          "--add-exports", "java.base/sun.util.calendar=ALL-UNNAMED",
           "--add-opens", "java.base/java.lang=ALL-UNNAMED",
-          "--add-opens", "java.base/sun.util.calendar=ALL-UNNAMED"
+          "--add-opens", "java.base/java.net=ALL-UNNAMED"
         )
       } else {
         Seq()

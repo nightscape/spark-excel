@@ -157,60 +157,29 @@ class WriteAndReadSuite extends AnyFunSuite with DataFrameSuiteBase with ExcelTe
     if (spark.version.startsWith("2.")) {
       cancel(DATETIME_JAVA8API_ENABLED + " didn't exist before spark 3.0. Nothing to test!")
     }
-    
-    // For Spark 4.0+, avoid using java8API.enabled=true due to ZoneInfo access issues
-    if (spark.version.startsWith("4.")) {
-      // Test with java8API disabled to use java.sql types instead
-      val path = Files.createTempDirectory("spark_excel_wr_02_").toString()
-      val previousConfigValue = spark.conf.getOption(DATETIME_JAVA8API_ENABLED)
-      spark.conf.set(DATETIME_JAVA8API_ENABLED, false)
-      val expectedData_02_sql = expectedData_02
-        .map(r => Row.fromTuple((r.getInt(0), Date.valueOf(r.getString(1)), Timestamp.valueOf(r.getString(2)))))
-        .asJava
-      val df_source = spark.createDataFrame(expectedData_02_sql, userDefinedSchema_02).sort("Id")
-      df_source.write.format("excel").mode(SaveMode.Append).save(path)
+    val path = Files.createTempDirectory("spark_excel_wr_02_").toString()
+    val previousConfigValue = spark.conf.get(DATETIME_JAVA8API_ENABLED)
+    spark.conf.set(DATETIME_JAVA8API_ENABLED, true)
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault)
+    val expectedData_02_time = expectedData_02
+      .map(r =>
+        Row.fromTuple((r.getInt(0), LocalDate.parse(r.getString(1)), Instant.from(formatter.parse(r.getString(2)))))
+      )
+      .asJava
+    val df_source = spark.createDataFrame(expectedData_02_time, userDefinedSchema_02).sort("Id")
+    df_source.write.format("excel").mode(SaveMode.Append).save(path)
 
-      val df_read = spark.read
-        .format("excel")
-        .schema(userDefinedSchema_02)
-        .load(path)
-        .sort("Id")
+    val df_read = spark.read
+      .format("excel")
+      .schema(userDefinedSchema_02)
+      .load(path)
+      .sort("Id")
 
-      assertDataFrameEquals(df_source, df_read)
+    assertDataFrameEquals(df_source, df_read)
 
-      /* Cleanup, should after the checking */
-      if (previousConfigValue.isEmpty) {
-        spark.conf.unset(DATETIME_JAVA8API_ENABLED)
-      } else {
-        spark.conf.set(DATETIME_JAVA8API_ENABLED, previousConfigValue.get)
-      }
-      deleteDirectory(path)
-    } else {
-      // Original test for Spark < 4.0
-      val path = Files.createTempDirectory("spark_excel_wr_02_").toString()
-      val previousConfigValue = spark.conf.get(DATETIME_JAVA8API_ENABLED)
-      spark.conf.set(DATETIME_JAVA8API_ENABLED, true)
-      val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault)
-      val expectedData_02_time = expectedData_02
-        .map(r =>
-          Row.fromTuple((r.getInt(0), LocalDate.parse(r.getString(1)), Instant.from(formatter.parse(r.getString(2)))))
-        )
-        .asJava
-      val df_source = spark.createDataFrame(expectedData_02_time, userDefinedSchema_02).sort("Id")
-      df_source.write.format("excel").mode(SaveMode.Append).save(path)
-
-      val df_read = spark.read
-        .format("excel")
-        .schema(userDefinedSchema_02)
-        .load(path)
-        .sort("Id")
-
-      assertDataFrameEquals(df_source, df_read)
-
-      /* Cleanup, should after the checking */
-      spark.conf.set(DATETIME_JAVA8API_ENABLED, previousConfigValue)
-      deleteDirectory(path)
-    }
+    /* Cleanup, should after the checking */
+    spark.conf.set(DATETIME_JAVA8API_ENABLED, previousConfigValue)
+    deleteDirectory(path)
   }
 
   private def simpleTest(maxRowsInMemory: Option[Int] = None): Unit = {
