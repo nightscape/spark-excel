@@ -2,6 +2,15 @@ Next
 ====
 
 
+## [v0.31.0] - 2025-07-04
+### :wrench: Chores
+- [`c091cb1`](https://github.com/nightscape/spark-excel/commit/c091cb1155594518bed336660bdb57396155277a) - Update excel-streaming-reader from 5.0.4 to 5.1.0 *(commit by [@scala-steward](https://github.com/scala-steward))*
+- [`9b4022a`](https://github.com/nightscape/spark-excel/commit/9b4022afcb48285c6eb92f02a275f7edc38b59e1) - Update scalafmt-core from 3.9.6 to 3.9.7 *(commit by [@scala-steward](https://github.com/scala-steward))*
+- [`a7a2757`](https://github.com/nightscape/spark-excel/commit/a7a275798468f5ab51f6ab056dce2c2dc8ffbffa) - Update spark-core, spark-hive, spark-sql from 3.5.5 to 3.5.6 *(commit by [@scala-steward](https://github.com/scala-steward))*
+- [`6580f2e`](https://github.com/nightscape/spark-excel/commit/6580f2e8beb236d3743bdd8aa5d0df45b31ffcd2) - Update spark-fast-tests from 1.3.0 to 3.0.1 *(commit by [@scala-steward](https://github.com/scala-steward))*
+- [`f69ea95`](https://github.com/nightscape/spark-excel/commit/f69ea95af0b1a6dc8644717e644620e871d9b519) - Update scalafmt-core from 3.9.7 to 3.9.8 *(commit by [@scala-steward](https://github.com/scala-steward))*
+
+
 ## [v0.30.3] - 2025-05-22
 ### :bug: Bug Fixes
 - [`6a8a0c8`](https://github.com/nightscape/spark-excel/commit/6a8a0c8503915bf155ef8ab271ed9425054ebf25) - 747: Remove decimal points from integer values when usePlainNumberFormat=true *(PR [#948](https://github.com/nightscape/spark-excel/pull/948) by [@liewkaitsan](https://github.com/liewkaitsan))*
@@ -367,3 +376,4 @@ Next
 [v0.30.1]: https://github.com/nightscape/spark-excel/compare/v0.30.0...v0.30.1
 [v0.30.2]: https://github.com/nightscape/spark-excel/compare/v0.30.1...v0.30.2
 [v0.30.3]: https://github.com/nightscape/spark-excel/compare/v0.30.2...v0.30.3
+[v0.31.0]: https://github.com/nightscape/spark-excel/compare/v0.30.4...v0.31.0
