@@ -46,17 +46,35 @@ jobs:
 
       - name: Download Java (temurin@11)
         id: download-java-temurin-11
+        if: ${{ !startsWith(matrix.spark, '4.') }}
         uses: typelevel/download-java@v2
         with:
           distribution: temurin
           java-version: 11
 
+      - name: Download Java (temurin@17)
+        id: download-java-temurin-17
+        if: ${{ startsWith(matrix.spark, '4.') }}
+        uses: typelevel/download-java@v2
+        with:
+          distribution: temurin
+          java-version: 17
+
       - name: Setup Java (temurin@11)
+        if: ${{ !startsWith(matrix.spark, '4.') }}
         uses: actions/setup-java@v4
         with:
           distribution: jdkfile
           java-version: 11
           jdkFile: ${{ steps.download-java-temurin-11.outputs.jdkFile }}
+
+      - name: Setup Java (temurin@17)
+        if: ${{ startsWith(matrix.spark, '4.') }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: jdkfile
+          java-version: 17
+          jdkFile: ${{ steps.download-java-temurin-17.outputs.jdkFile }}
 
       - name: Cache mill
         uses: actions/cache@v4
@@ -71,7 +89,11 @@ jobs:
           key: ${{ runner.os }}-mill-cache-v2-${{ hashFiles('**/*.mill') }}-${{ hashFiles('project/build.properties') }}
 
       - name: Test
-        run: ./mill spark-excel[${{ matrix.scala }},${{ matrix.spark }}].test
+        run: |
+          if [[ "${{ matrix.spark }}" == 4.* ]]; then
+            export JAVA_OPTS="--add-opens java.base/sun.nio.ch=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/sun.util.calendar=ALL-UNNAMED"
+          fi
+          ./mill spark-excel[${{ matrix.scala }},${{ matrix.spark }}].test
 
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v5

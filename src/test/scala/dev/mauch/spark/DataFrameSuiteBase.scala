@@ -12,6 +12,7 @@ trait DataFrameSuiteBase extends DataFrameComparer {
     .master("local")
     .appName("spark-excel session")
     .config("spark.sql.shuffle.partitions", "1")
+    .config("spark.sql.ansi.enabled", "false")
     .getOrCreate()
 
   def assertDataFrameEquals(df1: DataFrame, df2: DataFrame): Unit =

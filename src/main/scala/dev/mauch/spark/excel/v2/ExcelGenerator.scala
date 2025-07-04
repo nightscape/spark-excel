@@ -23,18 +23,42 @@ import org.apache.poi.ss.usermodel.{Cell, CellStyle, Workbook}
 import org.apache.poi.ss.util.WorkbookUtil
 import org.apache.poi.xssf.streaming.SXSSFWorkbook
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
-import org.apache.spark.sql.catalyst.util.DateTimeUtils
+// Import DateTimeUtils carefully to handle Spark 4.0 compatibility
+import java.sql.{Date, Timestamp}
+import java.time.LocalDate
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.types._
 
 class ExcelGenerator(val path: String, val dataSchema: StructType, val conf: Configuration, val options: ExcelOptions) {
+
+  // Compatibility methods for date/time conversion that work across Spark versions
+  private def sparkToJavaDate(daysSinceEpoch: Int): Date = {
+    // Use simple direct conversion for both Spark versions to avoid DateTimeUtils issues
+    val localDate = LocalDate.ofEpochDay(daysSinceEpoch.toLong)
+    Date.valueOf(localDate)
+  }
+
+  private def sparkToJavaTimestamp(us: Long): Timestamp = {
+    // Use simple direct conversion for both Spark versions to avoid DateTimeUtils issues  
+    val millis = us / 1000
+    val nanos = ((us % 1000000) * 1000).toInt
+    val ts = new Timestamp(millis)
+    ts.setNanos(nanos)
+    ts
+  }
   /* Prepare target Excel workbook, sheet and where to write to */
   private val wb: Workbook = {
     if (options.fileExtension.toLowerCase == "xlsx") {
       options.maxRowsInMemory match {
-        case Some(maxRows) => new SXSSFWorkbook(maxRows)
-        case _ => new XSSFWorkbook()
+        case Some(maxRows) =>
+          // POI 5.x validates rowAccessWindowSize must be > 0 or -1
+          // Throw exception for invalid values other than legitimate cases
+          if (maxRows < -1 || maxRows == 0) {
+            throw new IllegalArgumentException(s"maxRowsInMemory must be positive or -1 for unlimited, got: $maxRows")
+          }
+          new SXSSFWorkbook(maxRows)
+        case None => new XSSFWorkbook()
       }
     } else {
       new HSSFWorkbook()
@@ -120,13 +144,13 @@ class ExcelGenerator(val path: String, val dataSchema: StructType, val conf: Con
       }
     case DateType =>
       (row: InternalRow, ordinal: Int, cell: Cell) => {
-        cell.setCellValue(DateTimeUtils.toJavaDate(row.getInt(ordinal)))
+        cell.setCellValue(sparkToJavaDate(row.getInt(ordinal)))
         cell.setCellStyle(DateCellStyle)
       }
 
     case TimestampType =>
       (row: InternalRow, ordinal: Int, cell: Cell) => {
-        cell.setCellValue(DateTimeUtils.toJavaTimestamp(row.getLong(ordinal)))
+        cell.setCellValue(sparkToJavaTimestamp(row.getLong(ordinal)))
         cell.setCellStyle(TimestampCellStyle)
       }
 

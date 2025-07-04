@@ -51,6 +51,7 @@ case class ExampleData(
   aJavaBigDecimalOption: Option[java.math.BigDecimal],
   aString: String,
   aStringOption: Option[String],
+  // Use Timestamp/Date types for Spark 4.0 compatibility - encoders handle java.sql types properly
   aTimestamp: java.sql.Timestamp,
   aTimestampOption: Option[java.sql.Timestamp],
   aDate: java.sql.Date,
@@ -63,6 +64,21 @@ trait Generators {
   private val dstTransitionDays =
     ZoneId.systemDefault().getRules.getTransitions.asScala.map(_.getInstant.truncatedTo(ChronoUnit.DAYS))
   def isDstTransitionDay(instant: Instant): Boolean = dstTransitionDays.contains(instant.truncatedTo(ChronoUnit.DAYS))
+  // Generate java.sql.Timestamp for both Spark 3.x and 4.0 compatibility
+  val timestampGen: Gen[java.sql.Timestamp] = 
+    Gen
+      .chooseNum[Long](0L, (new java.util.Date).getTime + 1000000)
+      .map(new java.sql.Timestamp(_))
+      .filterNot(d => isDstTransitionDay(d.toInstant))
+
+  // Generate java.sql.Date for both Spark 3.x and 4.0 compatibility
+  val dateGen: Gen[java.sql.Date] = 
+    Gen
+      .chooseNum[Long](0L, (new java.util.Date).getTime + 1000000)
+      .map(new java.sql.Date(_))
+      .filterNot(d => isDstTransitionDay(d.toLocalDate.atStartOfDay(ZoneOffset.UTC).toInstant))
+
+  // Legacy Arbitrary instances for backward compatibility (not used in Spark 4.0)
   implicit val arbitraryDateFourDigits: Arbitrary[Date] = Arbitrary[java.sql.Date](
     Gen
       .chooseNum[Long](0L, (new java.util.Date).getTime + 1000000)
@@ -96,6 +112,42 @@ trait Generators {
 
   implicit val arbitraryStringWithoutUnicodeCharacters: Arbitrary[String] =
     Arbitrary[String](Gen.alphaNumStr)
+
+  // Explicit generator for ExampleData to handle version-specific timestamp/date fields
+  implicit val arbitraryExampleData: Arbitrary[ExampleData] = Arbitrary {
+    for {
+      aBoolean <- arbitrary[Boolean]
+      aBooleanOption <- arbitrary[Option[Boolean]]
+      aByte <- arbitrary[Byte]
+      aByteOption <- arbitrary[Option[Byte]]
+      aShort <- arbitrary[Short]
+      aShortOption <- arbitrary[Option[Short]]
+      anInt <- arbitrary[Int]
+      anIntOption <- arbitrary[Option[Int]]
+      aLong <- arbitraryLongWithLosslessDoubleConvertability.arbitrary
+      aLongOption <- arbitrary[Option[Long]]
+      aFloat <- arbitrary[Float]
+      aFloatOption <- arbitrary[Option[Float]]
+      aDouble <- arbitrary[Double]
+      aDoubleOption <- arbitrary[Option[Double]]
+      aBigDecimal <- arbitraryBigDecimal.arbitrary
+      aBigDecimalOption <- arbitrary[Option[BigDecimal]]
+      aJavaBigDecimal <- arbitraryJavaBigDecimal.arbitrary
+      aJavaBigDecimalOption <- arbitrary[Option[java.math.BigDecimal]]
+      aString <- arbitraryStringWithoutUnicodeCharacters.arbitrary
+      aStringOption <- arbitrary[Option[String]]
+      aTimestamp <- timestampGen
+      aTimestampOption <- Gen.option(timestampGen)
+      aDate <- dateGen
+      aDateOption <- Gen.option(dateGen)
+    } yield ExampleData(
+      aBoolean, aBooleanOption, aByte, aByteOption, aShort, aShortOption,
+      anInt, anIntOption, aLong, aLongOption, aFloat, aFloatOption,
+      aDouble, aDoubleOption, aBigDecimal, aBigDecimalOption,
+      aJavaBigDecimal, aJavaBigDecimalOption, aString, aStringOption,
+      aTimestamp, aTimestampOption, aDate, aDateOption
+    )
+  }
 
   val rowGen: Gen[ExampleData] = arbitrary[ExampleData].map(d => if (d.aString.isEmpty) d.copy(aString = null) else d)
   val rowsGen: Gen[List[ExampleData]] = Gen.listOf(rowGen)
