@@ -10,13 +10,13 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
   val sparkVersion = crossValue2
   val Array(sparkMajor, sparkMinor, sparkPatch) = sparkVersion.split("\\.")
   val sparkBinaryVersion = s"$sparkMajor.$sparkMinor"
-  
+
   // Set Java target version based on Spark version requirements
   override def javacOptions = T {
     if (sparkVersion >= "4.0.0") {
       Seq("-target", "17", "-source", "17")
     } else {
-      Seq("-target", "11", "-source", "11")  
+      Seq("-target", "11", "-source", "11")
     }
   }
 
@@ -25,10 +25,10 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
   object LowerOrEqual {
     def unapply(otherVersion: String): Boolean = otherVersion match {
       case s"${sparkMaj}.${sparkMin}.${sparkPat}" =>
-        (sparkMaj.toInt < sparkMajor.toInt) || 
+        (sparkMaj.toInt < sparkMajor.toInt) ||
         (sparkMaj == sparkMajor && (sparkMin.toInt < sparkMinor.toInt || (sparkMin == sparkMinor && sparkPat.toInt <= sparkPatch.toInt)))
-      case s"${sparkMaj}.${sparkMin}" => 
-        (sparkMaj.toInt < sparkMajor.toInt) || 
+      case s"${sparkMaj}.${sparkMin}" =>
+        (sparkMaj.toInt < sparkMajor.toInt) ||
         (sparkMaj == sparkMajor && sparkMin.toInt <= sparkMinor.toInt)
       case sparkMaj => sparkMaj.toInt <= sparkMajor.toInt
     }
@@ -36,10 +36,10 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
   object HigherOrEqual {
     def unapply(otherVersion: String): Boolean = otherVersion match {
       case s"${sparkMaj}.${sparkMin}.${sparkPat}" =>
-        (sparkMaj.toInt > sparkMajor.toInt) || 
+        (sparkMaj.toInt > sparkMajor.toInt) ||
         (sparkMaj == sparkMajor && (sparkMin.toInt > sparkMinor.toInt || (sparkMin == sparkMinor && sparkPat.toInt >= sparkPatch.toInt)))
-      case s"${sparkMaj}.${sparkMin}" => 
-        (sparkMaj.toInt > sparkMajor.toInt) || 
+      case s"${sparkMaj}.${sparkMin}" =>
+        (sparkMaj.toInt > sparkMajor.toInt) ||
         (sparkMaj == sparkMajor && sparkMin.toInt >= sparkMinor.toInt)
       case sparkMaj => sparkMaj.toInt >= sparkMajor.toInt
     }
@@ -49,7 +49,7 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
     val versionSpecificDirs = os.list(mill.api.WorkspaceRoot.workspaceRoot / "src" / "main")
     val Array(sparkMajor, sparkMinor, sparkPatch) = sparkVersion.split("\\.")
     val sparkBinaryVersion = s"$sparkMajor.$sparkMinor"
-    
+
     // For Spark 4.0+, prefer 4.0_and_up over older version ranges
     val matchingDirs = versionSpecificDirs.filter(_.last match {
       case "scala" => true
@@ -58,7 +58,7 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
       case s"${LowerOrEqual()}_to_${HigherOrEqual()}" => true
       case _ => false
     })
-    
+
     // Return all matching directories - let version-specific files be prioritized by Mill's source ordering
     matchingDirs
   }
@@ -118,7 +118,7 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
       ivy"org.apache.poi:poi-ooxml-lite:$poiVersion",
       ivy"org.apache.xmlbeans:xmlbeans:5.3.0",
       ivy"com.norbitltd::spoiwo:2.2.1",
-      ivy"com.github.pjfanning:excel-streaming-reader:5.1.0",
+      ivy"com.github.pjfanning:excel-streaming-reader:5.1.1",
       ivy"commons-io:commons-io:2.19.0",
       ivy"org.apache.commons:commons-compress:1.27.1",
       ivy"org.apache.logging.log4j:log4j-api:2.24.3",
@@ -151,10 +151,14 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
       if (sparkVersion >= "3.0.0") {
         Seq(
           "-XX:+IgnoreUnrecognizedVMOptions",
-          "--add-exports", "java.base/sun.nio.ch=ALL-UNNAMED",
-          "--add-exports", "java.base/sun.util.calendar=ALL-UNNAMED",
-          "--add-opens", "java.base/java.lang=ALL-UNNAMED",
-          "--add-opens", "java.base/java.net=ALL-UNNAMED"
+          "--add-exports",
+          "java.base/sun.nio.ch=ALL-UNNAMED",
+          "--add-exports",
+          "java.base/sun.util.calendar=ALL-UNNAMED",
+          "--add-opens",
+          "java.base/java.lang=ALL-UNNAMED",
+          "--add-opens",
+          "java.base/java.net=ALL-UNNAMED"
         )
       } else {
         Seq()
