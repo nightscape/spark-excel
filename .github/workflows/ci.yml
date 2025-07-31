@@ -20,9 +20,24 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine Version
+        id: version
+        uses: paulhatch/semantic-version@v5.4.0
+        with:
+          tag_prefix: "v"
+          major_pattern: "(MAJOR)"
+          minor_pattern: "(MINOR)"
+          version_format: "${major}.${minor}.${patch}-prerelease${increment}"
+          search_commit_body: false
+          user_format_type: "csv"
+          bump_each_commit: false
 
       - name: Generate matrix
         id: set-matrix
@@ -108,7 +123,7 @@ jobs:
 
   publish:
     name: Publish Artifacts
-    needs: [build]
+    needs: [prepare, build]
     if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
     strategy:
       matrix:
@@ -158,8 +173,11 @@ jobs:
           trust_level: 5
 
       - name: Publish
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           export GPG_TTY=$(tty)
+          echo "Publishing version: $VERSION"
           ./mill -i mill.scalalib.SonatypeCentralPublishModule/ \
             --username $SONATYPE_USERNAME \
             --password $SONATYPE_PASSWORD \

@@ -1,8 +1,8 @@
+//| mill-version: 1.0.2
+//| mill-jvm-opts: ["-Xmx4G"]
 import coursier.maven.MavenRepository
 import mill._, scalalib._, publish._
 import Assembly._
-import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.4.0`
-import de.tobiasroeser.mill.vcs.version.VcsVersion
 
 case class SparkVersionSpecific(flag: String, lowerVersion: Option[String] = None, upperVersion: Option[String] = None)
 
@@ -14,7 +14,7 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
   val sparkBinaryVersion = s"$sparkMajor.$sparkMinor"
 
   // Set Java target version based on Spark version requirements
-  override def javacOptions = T {
+  override def javacOptions = Task{
     if (sparkVersion >= "4.0.0") {
       Seq("-target", "17", "-source", "17")
     } else {
@@ -22,13 +22,13 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
     }
   }
 
-  override def millSourcePath = super.millSourcePath / os.up
+  override def moduleDir = super.moduleDir / os.up
 
-  override def scalacPluginIvyDeps = T {
-    super.scalacPluginIvyDeps() ++ Agg(ivy"com.eed3si9n.ifdef::ifdef-plugin:0.4.1")
+  override def scalacPluginMvnDeps = Task {
+    super.scalacPluginMvnDeps() ++ Seq(mvn"com.eed3si9n.ifdef::ifdef-plugin:0.4.1")
   }
 
-  override def scalacOptions = T {
+  override def scalacOptions = Task {
     val baseOptions = super.scalacOptions()
 
     val sparkVersionSpecificFlags = Seq(
@@ -77,13 +77,14 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
     baseOptions ++ ifdefOptions
   }
 
-  override def docSources = T.sources(Seq[PathRef]())
+  override def docSources = Task{Seq[PathRef]()}
 
   override def artifactName = "spark-excel"
-
-  override def publishVersion: T[String] = T {
-    val vcsVersion = VcsVersion.vcsState().format(untaggedSuffix = "-SNAPSHOT")
-    s"${sparkVersion}_${vcsVersion}"
+  def envVersion = Task.Input {
+    Task.env.getOrElse("VERSION", null)
+  }
+  override def publishVersion: T[String] = Task{
+    s"${sparkVersion}_${envVersion()}"
   }
   def pomSettings = PomSettings(
     description = "A Spark plugin for reading and writing Excel files",
@@ -108,58 +109,49 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
   override def sonatypeCentralReadTimeout: T[Int] = 600000
   override def sonatypeCentralAwaitTimeout: T[Int] = 1200 * 1000
 
-  val sparkDeps = Agg(
-    ivy"org.apache.spark::spark-core:$sparkVersion",
-    ivy"org.apache.spark::spark-sql:$sparkVersion",
-    ivy"org.apache.spark::spark-hive:$sparkVersion"
+  val sparkDeps = Seq(
+    mvn"org.apache.spark::spark-core:$sparkVersion",
+    mvn"org.apache.spark::spark-sql:$sparkVersion",
+    mvn"org.apache.spark::spark-hive:$sparkVersion"
   )
 
-  override def compileIvyDeps = if (sparkVersion < "3.3.0") {
-    sparkDeps ++ Agg(ivy"org.slf4j:slf4j-api:1.7.36".excludeOrg("stax"))
+  override def compileMvnDeps = if (sparkVersion < "3.3.0") {
+    sparkDeps ++ Seq(mvn"org.slf4j:slf4j-api:1.7.36".excludeOrg("stax"))
   } else {
     sparkDeps
   }
 
   val poiVersion = "5.4.1"
 
-  override def ivyDeps = {
-    val base = Agg(
-      ivy"org.apache.poi:poi:$poiVersion",
-      ivy"org.apache.poi:poi-ooxml:$poiVersion",
-      ivy"org.apache.poi:poi-ooxml-lite:$poiVersion",
-      ivy"org.apache.xmlbeans:xmlbeans:5.3.0",
-      ivy"com.norbitltd::spoiwo:2.2.1",
-      ivy"com.github.pjfanning:excel-streaming-reader:5.1.1",
-      ivy"commons-io:commons-io:2.20.0",
-      ivy"org.apache.commons:commons-compress:1.27.1",
-      ivy"org.apache.logging.log4j:log4j-api:2.24.3",
-      ivy"com.zaxxer:SparseBitSet:1.3",
-      ivy"org.apache.commons:commons-collections4:4.5.0",
-      ivy"com.github.virtuald:curvesapi:1.08",
-      ivy"commons-codec:commons-codec:1.19.0",
-      ivy"org.apache.commons:commons-math3:3.6.1",
-      ivy"org.scala-lang.modules::scala-collection-compat:2.13.0",
-      ivy"com.eed3si9n.ifdef::ifdef-annotation:0.4.1"
+  override def mvnDeps = {
+    val base = Seq(
+      mvn"org.apache.poi:poi:$poiVersion",
+      mvn"org.apache.poi:poi-ooxml:$poiVersion",
+      mvn"org.apache.poi:poi-ooxml-lite:$poiVersion",
+      mvn"org.apache.xmlbeans:xmlbeans:5.3.0",
+      mvn"com.norbitltd::spoiwo:2.2.1",
+      mvn"com.github.pjfanning:excel-streaming-reader:5.1.1",
+      mvn"commons-io:commons-io:2.20.0",
+      mvn"org.apache.commons:commons-compress:1.27.1",
+      mvn"org.apache.logging.log4j:log4j-api:2.24.3",
+      mvn"com.zaxxer:SparseBitSet:1.3",
+      mvn"org.apache.commons:commons-collections4:4.5.0",
+      mvn"com.github.virtuald:curvesapi:1.08",
+      mvn"commons-codec:commons-codec:1.19.0",
+      mvn"org.apache.commons:commons-math3:3.6.1",
+      mvn"org.scala-lang.modules::scala-collection-compat:2.13.0",
+      mvn"com.eed3si9n.ifdef::ifdef-annotation:0.4.1"
     )
     if (sparkVersion >= "3.3.0") {
-      base ++ Agg(ivy"org.apache.logging.log4j:log4j-core:2.24.3")
+      base ++ Seq(mvn"org.apache.logging.log4j:log4j-core:2.24.3")
     } else {
       base
     }
   }
 
   object test extends SbtTests with TestModule.ScalaTest {
-
-    override def millSourcePath = super.millSourcePath
-
-    override def resources = T.sources {
-      Seq(PathRef(millSourcePath / "src" / "test" / "resources"))
-    }
-
-    def scalaVersion = outer.scalaVersion()
-
     // Add JVM options to handle Java module restrictions (JAVA 11+)
-    override def forkArgs = T {
+    override def forkArgs = Task{
       Seq(
         "-XX:+IgnoreUnrecognizedVMOptions",
         "--add-exports",
@@ -173,18 +165,18 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
       )
     }
 
-    def repositoriesTask = T.task {
-      super.repositoriesTask() ++ Seq(MavenRepository("https://jitpack.io"))
+    override def repositories = Task{
+      super.repositories() ++ Seq("https://jitpack.io")
     }
 
-    def ivyDeps = sparkDeps ++ Agg(
-      ivy"org.typelevel::cats-core:2.13.0",
-      ivy"org.scalatest::scalatest:3.2.19",
-      ivy"org.scalatestplus::scalacheck-1-16:3.2.14.0",
-      ivy"org.scalacheck::scalacheck:1.18.1",
-      ivy"com.github.alexarchambault::scalacheck-shapeless_1.15:1.3.0",
-      ivy"com.github.mrpowers::spark-fast-tests:3.0.1",
-      ivy"org.scalamock::scalamock:5.2.0"
+    def mvnDeps = sparkDeps ++ Seq(
+      mvn"org.typelevel::cats-core:2.13.0",
+      mvn"org.scalatest::scalatest:3.2.19",
+      mvn"org.scalatestplus::scalacheck-1-16:3.2.14.0",
+      mvn"org.scalacheck::scalacheck:1.18.1",
+      mvn"com.github.alexarchambault::scalacheck-shapeless_1.15:1.3.0",
+      mvn"com.github.mrpowers::spark-fast-tests:3.0.1",
+      mvn"org.scalamock::scalamock:5.2.0"
     )
   }
 
