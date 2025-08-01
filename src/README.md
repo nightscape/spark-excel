@@ -8,7 +8,6 @@ These two implementations are compatible with each other in terms of options and
 Spark DataSource API V2 is still under development, since spark 2.3. And to keep spark-excel V2 code to minimum, spark-excel V2 heavily relies on utilities and improvements of each upstream spark version.
 
 Spark-excel V2 introduces spark-version specific code folder, like:
-`2.4/.../spark/v2/excel` for Spark 2.4 Data Source API V2
 `3.x/.../spark/v2/excel` for all Spark 3.* Data Source API V2
 `3.1_3.2/.../spark/v2/excel` for shared code between Spark 3.1 and Spark 3.2 Data Source API V2
 

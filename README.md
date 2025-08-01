@@ -18,12 +18,9 @@ Help is very welcome e.g. in the following areas:
 
 ## Requirements
 
-This library requires Spark 2.0+.
+This library requires Spark 3.0+.
 
-List of spark versions, those are automatically tested:
-```
-spark: ["2.4.1", "2.4.7", "2.4.8", "3.0.1", "3.0.3", "3.1.1", "3.1.2", "3.2.4", "3.3.2", "3.4.1"]
-```
+For a list of Spark versions that are automatically tested, see [build.mill](build.mill)
 For more detail, please refer to project CI: [ci.yml](https://github.dev/mauch/spark-excel/blob/main/.github/workflows/ci.yml#L10)
 
 ## Linking
@@ -36,24 +33,11 @@ artifactId: spark-excel_2.12
 version: <spark-version>_0.18.0
 ```
 
-### Scala 2.11
-```
-groupId: dev.mauch
-artifactId: spark-excel_2.11
-version: <spark-version>_0.13.7
-```
-
 ## Using with Spark shell
 This package can be added to  Spark using the `--packages` command line option.  For example, to include it when starting the spark shell:
 
-### Spark compiled with Scala 2.12
 ```
-$SPARK_HOME/bin/spark-shell --packages dev.mauch:spark-excel_2.12:<spark-version>_0.18.0
-```
-
-### Spark compiled with Scala 2.11
-```
-$SPARK_HOME/bin/spark-shell --packages dev.mauch:spark-excel_2.11:<spark-version>_0.13.7
+$SPARK_HOME/bin/spark-shell --packages dev.mauch:spark-excel_<scala-binary-version>:<spark-version>_<spark-excel-version>
 ```
 
 ## Features
@@ -186,10 +170,10 @@ As you can see in the examples above,
 the location of data to read or write can be specified with the `dataAddress` option.
 
 The data address consists of two portions:
-* The sheet name (optional) 
-* The cell range 
+* The sheet name (optional)
+* The cell range
 
-For example `'My Sheet'!B3:F35` will read from the sheet `My Sheet` and the cell range `B3:F35`.  
+For example `'My Sheet'!B3:F35` will read from the sheet `My Sheet` and the cell range `B3:F35`.
 
 Following rules apply for the sheet name:
 * The sheet name is optional and can be omitted. In that case data is read from the first sheet (the leftmost sheet).
@@ -236,7 +220,7 @@ b.   The standard does not define any order requirements for rows.
 In Office, rows must appear in ascending order.
 ```
 
-In the meantime you could implement such a behavior on your own by adding the row number as a column to your DataFrame (``columnNameOfRowNumber`` option) and then add rows for the missing row numbers. 
+In the meantime you could implement such a behavior on your own by adding the row number as a column to your DataFrame (``columnNameOfRowNumber`` option) and then add rows for the missing row numbers.
 
 
 ### Excel API based on DataSourceV2
