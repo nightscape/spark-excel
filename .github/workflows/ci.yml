@@ -77,7 +77,7 @@ jobs:
 
       - name: Setup Java (temurin@11)
         if: ${{ !startsWith(matrix.spark, '4.') }}
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: jdkfile
           java-version: 11
@@ -85,7 +85,7 @@ jobs:
 
       - name: Setup Java (temurin@17)
         if: ${{ startsWith(matrix.spark, '4.') }}
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: jdkfile
           java-version: 17
@@ -147,7 +147,7 @@ jobs:
 
       - name: Setup Java (temurin@11)
         if: matrix.java == 'temurin@11'
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: jdkfile
           java-version: 11
