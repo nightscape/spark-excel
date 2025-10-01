@@ -121,7 +121,7 @@ class CellRangeAddressDataLocator(val options: ExcelOptions) extends DataLocator
     val sheet = name
       .map(sn =>
         // first we try to interpret the sheet name as string, then try to convert it to a number (issue #942)
-        Option(workbook.getSheet(sn))
+        Try(Option(workbook.getSheet(sn))).toOption.flatten
           .orElse(Try(Option(workbook.getSheetAt(sn.toInt))).toOption.flatten)
           .getOrElse(throw new IllegalArgumentException(s"Unknown sheet $sn"))
       )
