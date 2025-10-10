@@ -106,6 +106,18 @@ class TableReadSuite extends AnyFunSuite with DataFrameSuiteBase with ExcelTesti
     assert(df.first().getString(0) == "A") // sheet 001 contains "A" as first cell value (001 has "WRONG")
   }
 
+  for (config <- Seq(Tuple2(0, 3), Tuple2(1, 2))) {
+    test(s"read sheet names using index based dataAdress(read index ${config._1})") {
+      val df = readFromResources(
+        spark,
+        path = "read_multiple_sheets_at_once.xlsx",
+        options =
+          Map("dataAddress" -> s"${config._1}!A1", "inferSchema" -> true, "header" -> true, "maxRowsInMemory" -> 1000)
+      )
+      assert(df.count() == config._2) // sheet_1 has 3 rows
+    }
+  }
+
   for (useStreamingReader <- Seq(true, false)) {
     test(
       s"check handling of faulty dimension tags using streaming reader == $useStreamingReader (keepUndefinedRows=false)"
