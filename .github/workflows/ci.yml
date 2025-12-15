@@ -92,7 +92,7 @@ jobs:
           jdkFile: ${{ steps.download-java-temurin-17.outputs.jdkFile }}
 
       - name: Cache mill
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.mill
@@ -154,7 +154,7 @@ jobs:
           jdkFile: ${{ steps.download-java-temurin-11.outputs.jdkFile }}
 
       - name: Cache mill
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.mill
