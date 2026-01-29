@@ -14,7 +14,7 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
   val sparkBinaryVersion = s"$sparkMajor.$sparkMinor"
 
   // Set Java target version based on Spark version requirements
-  override def javacOptions = Task{
+  override def javacOptions = Task {
     if (sparkVersion >= "4.0.0") {
       Seq("-target", "17", "-source", "17")
     } else {
@@ -77,13 +77,13 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
     baseOptions ++ ifdefOptions
   }
 
-  override def docSources = Task{Seq[PathRef]()}
+  override def docSources = Task { Seq[PathRef]() }
 
   override def artifactName = "spark-excel"
   def envVersion = Task.Input {
     Task.env.getOrElse("VERSION", null)
   }
-  override def publishVersion: T[String] = Task{
+  override def publishVersion: T[String] = Task {
     s"${sparkVersion}_${envVersion()}"
   }
   def pomSettings = PomSettings(
@@ -171,7 +171,7 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
 
   object test extends SbtTests with TestModule.ScalaTest {
     // Add JVM options to handle Java module restrictions (JAVA 11+)
-    override def forkArgs = Task{
+    override def forkArgs = Task {
       Seq(
         "-XX:+IgnoreUnrecognizedVMOptions",
         "--add-exports",
@@ -185,7 +185,7 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
       )
     }
 
-    override def repositories = Task{
+    override def repositories = Task {
       super.repositories() ++ Seq("https://jitpack.io")
     }
 
@@ -196,7 +196,7 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
       mvn"org.scalacheck::scalacheck:1.18.1",
       mvn"com.github.alexarchambault::scalacheck-shapeless_1.15:1.3.0",
       mvn"com.github.mrpowers::spark-fast-tests:3.0.1",
-      mvn"org.scalamock::scalamock:5.2.0"
+      mvn"org.scalamock::scalamock:7.5.4"
     )
   }
 
