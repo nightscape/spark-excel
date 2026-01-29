@@ -23,13 +23,11 @@ import org.apache.spark.sql.types.StructType
 /** Wrapping the API change between spark 3.0 vs 3.1 */
 @ifdef("filterHandling:CsvBased")
 class ExcelFilters(filters: Seq[sources.Filter], requiredSchema: StructType)
-    extends org.apache.spark.sql.catalyst.csv.CSVFilters(filters, requiredSchema) {
-}
+    extends org.apache.spark.sql.catalyst.csv.CSVFilters(filters, requiredSchema) {}
 
 @ifdef("filterHandling:Structured")
 class ExcelFilters(filters: Seq[sources.Filter], requiredSchema: StructType)
-    extends org.apache.spark.sql.catalyst.OrderedFilters(filters, requiredSchema) {
-}
+    extends org.apache.spark.sql.catalyst.OrderedFilters(filters, requiredSchema) {}
 
 object ExcelFilters {
   @ifdef("filterHandling:CsvBased")

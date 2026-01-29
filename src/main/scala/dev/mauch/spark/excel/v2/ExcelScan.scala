@@ -94,7 +94,10 @@ case class ExcelScan(
   }
 
   @ifdef("withFilters")
-  override def withFilters(partitionFilters: Seq[Expression], dataFilters: Seq[Expression]): org.apache.spark.sql.execution.datasources.v2.FileScan = {
+  override def withFilters(
+    partitionFilters: Seq[Expression],
+    dataFilters: Seq[Expression]
+  ): org.apache.spark.sql.execution.datasources.v2.FileScan = {
     this.copy(partitionFilters = partitionFilters, dataFilters = dataFilters)
   }
 

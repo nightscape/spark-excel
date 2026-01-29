@@ -24,7 +24,6 @@ import org.apache.spark.sql.catalyst.util.TimestampFormatter
 
 trait ExcelDateTimeStringUtils {
 
-
   @ifdef("legacyTimestampStringCleaning")
   private def prepareTimestampString(v: String): UTF8String =
     UTF8String.fromString(DateTimeUtils.cleanLegacyTimestampStr(v))
