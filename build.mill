@@ -15,7 +15,7 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
 
   // Set Java target version based on Spark version requirements
   override def javacOptions = Task {
-    if (sparkVersion >= "4.0.0") {
+    if (sparkVersion >= "4.0.1") {
       Seq("-target", "17", "-source", "17")
     } else {
       Seq("-target", "11", "-source", "11")
@@ -210,7 +210,7 @@ val spark32 = List("3.2.4")
 val spark33 = List("3.3.4")
 val spark34 = List("3.4.4", "3.4.1")
 val spark35 = List("3.5.6")
-val spark40 = List("4.0.0")
+val spark40 = List("4.0.1")
 val sparkVersions = spark30 ++ spark31 ++ spark32 ++ spark33 ++ spark34 ++ spark35 ++ spark40
 val crossMatrix =
   sparkVersions.filter(_ < "4.0").map(spark => (scala212, spark)) ++
