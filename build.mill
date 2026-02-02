@@ -196,7 +196,7 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
       mvn"org.scalacheck::scalacheck:1.19.0",
       mvn"com.github.alexarchambault::scalacheck-shapeless_1.15:1.3.0",
       mvn"com.github.mrpowers::spark-fast-tests:3.0.1",
-      mvn"org.scalamock::scalamock:5.2.0"
+      mvn"org.scalamock::scalamock:7.5.5"
     )
   }
 
