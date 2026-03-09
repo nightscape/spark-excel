@@ -179,7 +179,7 @@ jobs:
           key: ${{ runner.os }}-mill-cache-v2-${{ hashFiles('**/*.mill') }}-${{ hashFiles('project/build.properties') }}
 
       - name: Import GPG Key
-        uses: crazy-max/ghaction-import-gpg@v6
+        uses: crazy-max/ghaction-import-gpg@v7
         with:
           gpg_private_key: ${{ secrets.PGP_SECRET }}
           passphrase: ${{ secrets.PGP_PASSPHRASE }}
