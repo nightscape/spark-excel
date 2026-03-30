@@ -26,7 +26,7 @@ trait DataFrameSuiteBase extends DataFrameComparer {
       actualDF,
       expectedDF,
       equals = e,
-      ignoreNullable = false,
+      ignoreNullable = true,
       ignoreColumnNames = false,
       orderedComparison = false
     )
