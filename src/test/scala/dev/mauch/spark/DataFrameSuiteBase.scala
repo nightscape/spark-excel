@@ -70,11 +70,18 @@ object RelTolComparer {
       return false
     } else {
       (0 until r1.length).foreach(idx => {
-        if (r1.isNullAt(idx) != r2.isNullAt(idx)) {
-          return false
-        }
+        // Treat null and empty string as equivalent (V2 data source reads empty strings as null)
+        def isNullOrEmpty(r: Row, i: Int): Boolean =
+          r.isNullAt(i) || (r.get(i) match {
+            case s: String => s.isEmpty
+            case _ => false
+          })
 
-        if (!r1.isNullAt(idx)) {
+        if (isNullOrEmpty(r1, idx) && isNullOrEmpty(r2, idx)) {
+          // both null or empty string — treat as equal
+        } else if (r1.isNullAt(idx) != r2.isNullAt(idx)) {
+          return false
+        } else if (!r1.isNullAt(idx)) {
           val o1 = r1.get(idx)
           val o2 = r2.get(idx)
           o1 match {

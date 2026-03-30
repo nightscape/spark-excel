@@ -266,6 +266,7 @@ abstract class IntegrationSuite(implementation: String)
           val allData = spark.read
             .format(implementation)
             .option("dataAddress", s"'$sheetName'!A1")
+            .option("header", true)
             .option("inferSchema", true)
             .load(fileName)
           allData.schema.fieldNames should equal(expectedHeaderNames)
