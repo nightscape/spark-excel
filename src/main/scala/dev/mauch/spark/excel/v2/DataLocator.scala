@@ -36,28 +36,25 @@ trait DataLocator {
     */
   def readFrom(workbook: Workbook): Iterator[Vector[Cell]]
 
+  private def readCells(r: org.apache.poi.ss.usermodel.Row, colInd: Range): Vector[Cell] = {
+    val lastCellNum = r.getLastCellNum.toInt
+    val effectiveCols = if (lastCellNum < colInd.last + 1) colInd.start to math.min(colInd.last, lastCellNum - 1)
+    else colInd
+    effectiveCols.map(r.getCell(_, MissingCellPolicy.CREATE_NULL_AS_BLANK)).toVector
+  }
+
   def actualReadFromSheet(options: ExcelOptions, sheet: Sheet, rowInd: Range, colInd: Range): Iterator[Vector[Cell]] = {
     if (options.keepUndefinedRows) {
       rowInd.iterator.map(rid => {
         val r = sheet.getRow(rid)
         if (r == null) { Vector.empty }
-        else {
-          colInd
-            .filter(_ < r.getLastCellNum)
-            .map(r.getCell(_, MissingCellPolicy.CREATE_NULL_AS_BLANK))
-            .toVector
-        }
+        else { readCells(r, colInd) }
       })
 
     } else {
       sheet.iterator.asScala
         .filter(r => rowInd.contains(r.getRowNum))
-        .map(r =>
-          colInd
-            .filter(_ < r.getLastCellNum)
-            .map(r.getCell(_, MissingCellPolicy.CREATE_NULL_AS_BLANK))
-            .toVector
-        )
+        .map(r => readCells(r, colInd))
         .filter(_.exists(_.getCellType != CellType.BLANK)) // #965 filter rows that are completely empty
     }
   }
