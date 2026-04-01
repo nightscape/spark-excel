@@ -37,10 +37,15 @@ trait DataLocator {
   def readFrom(workbook: Workbook): Iterator[Vector[Cell]]
 
   private def readCells(r: org.apache.poi.ss.usermodel.Row, colInd: Range): Vector[Cell] = {
-    val lastCellNum = r.getLastCellNum.toInt
-    val effectiveCols = if (lastCellNum < colInd.last + 1) colInd.start to math.min(colInd.last, lastCellNum - 1)
-    else colInd
-    effectiveCols.map(r.getCell(_, MissingCellPolicy.CREATE_NULL_AS_BLANK)).toVector
+    if (colInd.isEmpty) {
+      Vector.empty
+    } else {
+      val lastCellNum = r.getLastCellNum.toInt
+      val effectiveCols =
+        if (lastCellNum < colInd.last + 1) colInd.start to math.min(colInd.last, lastCellNum - 1)
+        else colInd
+      effectiveCols.map(r.getCell(_, MissingCellPolicy.CREATE_NULL_AS_BLANK)).toVector
+    }
   }
 
   def actualReadFromSheet(options: ExcelOptions, sheet: Sheet, rowInd: Range, colInd: Range): Iterator[Vector[Cell]] = {
