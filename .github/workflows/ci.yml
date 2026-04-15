@@ -187,10 +187,15 @@ jobs:
 
       - name: Publish
         env:
-          VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || needs.prepare.outputs.version }}
+          PREPARED_VERSION: ${{ needs.prepare.outputs.version }}
           JAVA_OPTS: "--add-opens java.base/sun.nio.ch=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/sun.util.calendar=ALL-UNNAMED"
         run: |
           export GPG_TTY=$(tty)
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            export VERSION="${GITHUB_REF_NAME#v}"
+          else
+            export VERSION="$PREPARED_VERSION"
+          fi
           echo "Publishing version: $VERSION"
           ./mill -i mill.scalalib.SonatypeCentralPublishModule/ \
             --username $SONATYPE_USERNAME \
