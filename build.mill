@@ -139,7 +139,7 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
 
   val poiVersion = "5.5.1"
   val alwaysBundledDeps = Seq(
-    mvn"commons-io:commons-io:2.21.0",
+    mvn"commons-io:commons-io:2.22.0",
     mvn"org.apache.commons:commons-compress:1.27.1",
     // POI needs to be bundled so that its bytecode can be rewritten
     // to use the shaded version of commons-compress.
