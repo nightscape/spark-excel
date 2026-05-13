@@ -132,7 +132,7 @@ trait SparkModule extends Cross.Module2[String, String] with SbtModule with Sona
   )
 
   override def compileMvnDeps = if (sparkVersion < "3.3.0") {
-    sparkDeps ++ Seq(mvn"org.slf4j:slf4j-api:1.7.36".excludeOrg("stax"))
+    sparkDeps ++ Seq(mvn"org.slf4j:slf4j-api:2.0.18".excludeOrg("stax"))
   } else {
     sparkDeps
   }
