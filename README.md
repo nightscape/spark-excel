@@ -272,4 +272,4 @@ We are grateful for their support in the initial development and open-sourcing o
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=nightscape/spark-excel&type=Date)](https://star-history.com/#nightscape/spark-excel&Date)
+[![Star History Chart](https://api.star-history.dera.page/svg?repos=nightscape/spark-excel&type=Date)](https://star-history.dera.page/#nightscape/spark-excel&Date)
