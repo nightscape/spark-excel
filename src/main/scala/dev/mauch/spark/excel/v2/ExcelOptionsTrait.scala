@@ -106,6 +106,10 @@ trait ExcelOptionsTrait extends Serializable {
   /* If true, format the cells without rounding and scientific notations */
   val usePlainNumberFormat = getBool("usePlainNumberFormat", default = false)
 
+  /* If true, render every non-date numeric cell without rounding and scientific notations,
+     ignoring the cell's number format; date-formatted cells keep their formatted rendering */
+  val usePlainNumberFormatForAllCells = getBool("usePlainNumberFormatForAllCells", default = false)
+
   /* If true, keep undefined (Excel) rows */
   val keepUndefinedRows = getBool("keepUndefinedRows", default = false)
 

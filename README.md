@@ -69,6 +69,7 @@ val df = spark.read
     .option("treatEmptyValuesAsNulls", "false") // Optional, default: true
     .option("setErrorCellsToFallbackValues", "true") // Optional, default: false, where errors will be converted to null. If true, any ERROR cell values (e.g. #N/A) will be converted to the zero values of the column's data type.
     .option("usePlainNumberFormat", "false") // Optional, default: false, If true, format the cells without rounding and scientific notations
+    .option("usePlainNumberFormatForAllCells", "false") // Optional, default: false, If true, render every non-date numeric cell without rounding and scientific notations, ignoring the cell's number format; date-formatted cells keep their formatted rendering
     .option("inferSchema", "false") // Optional, default: false
     .option("addColorColumns", "true") // Optional, default: false
     .option("timestampFormat", "MM-dd-yyyy HH:mm:ss") // Optional, default: yyyy-mm-dd hh:mm:ss[.fffffffff]
@@ -96,6 +97,7 @@ val df = spark.read.excel(
     treatEmptyValuesAsNulls = false,  // Optional, default: true
     setErrorCellsToFallbackValues = false, // Optional, default: false, where errors will be converted to null. If true, any ERROR cell values (e.g. #N/A) will be converted to the zero values of the column's data type.
     usePlainNumberFormat = false,  // Optional, default: false. If true, format the cells without rounding and scientific notations
+    usePlainNumberFormatForAllCells = false,  // Optional, default: false. If true, render every non-date numeric cell without rounding and scientific notations, ignoring the cell's number format; date-formatted cells keep their formatted rendering
     inferSchema = false,  // Optional, default: false
     addColorColumns = true,  // Optional, default: false
     timestampFormat = "MM-dd-yyyy HH:mm:ss",  // Optional, default: yyyy-mm-dd hh:mm:ss[.fffffffff]

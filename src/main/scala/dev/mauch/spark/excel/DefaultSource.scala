@@ -43,6 +43,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       treatEmptyValuesAsNulls = parameters.get("treatEmptyValuesAsNulls").fold(false)(_.toBoolean),
       setErrorCellsToFallbackValues = parameters.get("setErrorCellsToFallbackValues").fold(false)(_.toBoolean),
       usePlainNumberFormat = parameters.get("usePlainNumberFormat").fold(false)(_.toBoolean),
+      usePlainNumberFormatForAllCells = parameters.get("usePlainNumberFormatForAllCells").fold(false)(_.toBoolean),
       userSchema = Option(schema),
       inferSheetSchema = parameters.get("inferSchema").fold(false)(_.toBoolean),
       addColorColumns = parameters.get("addColorColumns").fold(false)(_.toBoolean),
