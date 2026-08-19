@@ -20,6 +20,7 @@ import org.apache.spark.sql.types._
 
 import java.math.BigDecimal
 import java.sql.{Date, Timestamp}
+import java.text.FieldPosition
 import scala.util.{Failure, Success, Try}
 
 trait DataColumn extends PartialFunction[Seq[Cell], Any] {
@@ -36,11 +37,26 @@ class HeaderDataColumn(
   val columnIndex: Int,
   treatEmptyValuesAsNulls: Boolean,
   usePlainNumberFormat: Boolean,
+  usePlainNumberFormatForAllCells: Boolean,
   parseTimestamp: String => Timestamp,
   parseDate: String => Date,
   setErrorCellsToFallbackValues: Boolean
 ) extends DataColumn {
   def name: String = field.name
+
+  /** Whether this (cached-)numeric cell should be rendered at full precision, ignoring its number format. Date cells
+    * keep their formatted rendering, non-finite values keep POI's display rendering.
+    */
+  private def renderPlainNumber(cell: Cell): Boolean =
+    usePlainNumberFormatForAllCells && !DateUtil.isCellDateFormatted(cell) &&
+      java.lang.Double.isFinite(cell.getNumericCellValue)
+
+  /** Same invocation POI's DataFormatter uses for a registered format, so digits match usePlainNumberFormat's. */
+  private def plainNumberString(cell: Cell): String =
+    PlainNumberFormat
+      .format(BigDecimal.valueOf(cell.getNumericCellValue), new StringBuffer(), new FieldPosition(0))
+      .toString
+
   def extractValue(cell: Cell): Any = {
     val cellType = if (cell.getCellType == CellType.FORMULA) cell.getCachedFormulaResultType else cell.getCellType
     if (cellType == CellType.BLANK) {
@@ -65,11 +81,13 @@ class HeaderDataColumn(
         case CellType.FORMULA =>
           cell.getCachedFormulaResultType match {
             case CellType.STRING => Option(cell.getRichStringCellValue).map(_.getString)
+            case CellType.NUMERIC if renderPlainNumber(cell) => Some(plainNumberString(cell))
             case CellType.NUMERIC => Option(cell.getNumericCellValue).map(_.toString)
             case CellType.BLANK => None
             case _ => Some(dataFormatter.formatCellValue(cell))
           }
         case CellType.BLANK => None
+        case CellType.NUMERIC if renderPlainNumber(cell) => Some(plainNumberString(cell))
         case _ => Some(dataFormatter.formatCellValue(cell))
       }
     def parseNumber(string: Option[String]): Option[Double] = string.filter(_.trim.nonEmpty).map(stringToDouble)
