@@ -72,7 +72,9 @@ case class ExcelTable(
   /* Actual doing schema inferring */
   private def infer(sparkSession: SparkSession, inputPaths: Seq[FileStatus], options: ExcelOptions): StructType = {
     val excelHelper = ExcelHelper(options)
-    val conf = sparkSession.sessionState.newHadoopConf()
+    /* Hadoop Configurations are case sensitive. */
+    val caseSensitiveMap = map.asCaseSensitiveMap.asScala.toMap
+    val conf = sparkSession.sessionState.newHadoopConfWithOptions(caseSensitiveMap)
 
     /** Sampling ratio on file level (not row level as in CSV) */
     val paths = {

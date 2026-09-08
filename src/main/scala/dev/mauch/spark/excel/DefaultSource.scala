@@ -35,7 +35,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     parameters: Map[String, String],
     schema: StructType
   ): ExcelRelation = {
-    val conf = sqlContext.sparkSession.sessionState.newHadoopConf()
+    val conf = sqlContext.sparkSession.sessionState.newHadoopConfWithOptions(parameters)
     val wbReader = WorkbookReader(parameters, conf)
     val dataLocator = DataLocator(parameters)
     ExcelRelation(
@@ -63,7 +63,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val path = checkParameter(parameters, "path")
     val header = checkParameter(parameters, "header").toBoolean
     val filesystemPath = new Path(path)
-    val conf = sqlContext.sparkSession.sessionState.newHadoopConf()
+    val conf = sqlContext.sparkSession.sessionState.newHadoopConfWithOptions(parameters)
     val fs = filesystemPath.getFileSystem(conf)
     new ExcelFileSaver(
       fs,
