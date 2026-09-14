@@ -81,6 +81,36 @@ object PlainNumberReadSuite {
   )
 
   val issue747Data: util.List[Row] = List(Row("9024523", "902"), Row("1020001", "102"), Row("9764342", "L906")).asJava
+
+  // Predefined data for usePlainNumberFormatForAllCells tests
+  val allCellsSchema = StructType(
+    List(
+      StructField("formatted_number", StringType, true),
+      StructField("text_and_number", StringType, true),
+      StructField("general_number", StringType, true),
+      StructField("date_col", StringType, true)
+    )
+  )
+
+  val allCellsPlainData: util.List[Row] = List(
+    Row("84.789", "138,56", "123456789012", "01.07.2026"),
+    Row("3.2886", "5414874004074", "-0.12345678901", "15.01.2023"),
+    Row("0.0005", "0,0005", "123456789012", "31.12.2024") // 0.0005 must not gain a trailing zero; C4 is =123456789012*1
+  ).asJava
+
+  val allCellsDisplayData: util.List[Row] = List(
+    Row("84.79", "138,56", "1.23457E+11", "01.07.2026"), // explicit formats round, General goes scientific
+    Row("3.29", "5414874004074", "-0.123456789", "15.01.2023"),
+    Row("0.00", "0,0005", "1.23456789012E11", "31.12.2024") // cached formula results read as Double.toString
+  ).asJava
+
+  // usePlainNumberFormat=true alone: General cells render plain, explicit formats still round,
+  // cached formula results stay Double.toString -- the gap usePlainNumberFormatForAllCells closes
+  val allCellsGeneralPlainData: util.List[Row] = List(
+    Row("84.79", "138,56", "123456789012", "01.07.2026"),
+    Row("3.29", "5414874004074", "-0.12345678901", "15.01.2023"),
+    Row("0.00", "0,0005", "1.23456789012E11", "31.12.2024")
+  ).asJava
 }
 
 class PlainNumberReadSuite extends AnyFunSpec with DataFrameSuiteBase with Matchers {
@@ -148,6 +178,36 @@ class PlainNumberReadSuite extends AnyFunSpec with DataFrameSuiteBase with Match
 
       // Verify both dataframes should be equal
       assertDataFrameEquals(dfWithPlain, dfWithoutPlain)
+    }
+
+    // deliberately goes through the spark.read.excel(...) DSL so the option-key plumbing is exercised too
+    def readAllCellsFixture(usePlainNumberFormat: Boolean, usePlainNumberFormatForAllCells: Boolean): DataFrame = {
+      val url = getClass.getResource("/spreadsheets/plain_number_all_cells.xlsx")
+      spark.read
+        .excel(
+          header = true,
+          usePlainNumberFormat = usePlainNumberFormat,
+          usePlainNumberFormatForAllCells = usePlainNumberFormatForAllCells
+        )
+        .load(url.getPath)
+    }
+
+    it("should render explicitly formatted cells plain when usePlainNumberFormatForAllCells=true") {
+      val df = readAllCellsFixture(usePlainNumberFormat = false, usePlainNumberFormatForAllCells = true)
+      val expected = spark.createDataFrame(allCellsPlainData, allCellsSchema)
+      assertDataFrameEquals(expected, df)
+    }
+
+    it("should keep display rendering when usePlainNumberFormatForAllCells=false") {
+      val df = readAllCellsFixture(usePlainNumberFormat = false, usePlainNumberFormatForAllCells = false)
+      val expected = spark.createDataFrame(allCellsDisplayData, allCellsSchema)
+      assertDataFrameEquals(expected, df)
+    }
+
+    it("should still round explicitly formatted cells when only usePlainNumberFormat=true") {
+      val df = readAllCellsFixture(usePlainNumberFormat = true, usePlainNumberFormatForAllCells = false)
+      val expected = spark.createDataFrame(allCellsGeneralPlainData, allCellsSchema)
+      assertDataFrameEquals(expected, df)
     }
   }
 }

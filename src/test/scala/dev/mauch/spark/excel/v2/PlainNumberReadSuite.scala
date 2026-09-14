@@ -77,6 +77,36 @@ object PlainNumberReadSuite {
   )
 
   val issue747Data: util.List[Row] = List(Row("9024523", "902"), Row("1020001", "102"), Row("9764342", "L906")).asJava
+
+  // Predefined data for usePlainNumberFormatForAllCells tests
+  val allCellsSchema = StructType(
+    List(
+      StructField("formatted_number", StringType, true),
+      StructField("text_and_number", StringType, true),
+      StructField("general_number", StringType, true),
+      StructField("date_col", StringType, true)
+    )
+  )
+
+  val allCellsPlainData: util.List[Row] = List(
+    Row("84.789", "138,56", "123456789012", "01.07.2026"),
+    Row("3.2886", "5414874004074", "-0.12345678901", "15.01.2023"),
+    Row("0.0005", "0,0005", "123456789012", "31.12.2024") // 0.0005 must not gain a trailing zero; C4 is =123456789012*1
+  ).asJava
+
+  val allCellsDisplayData: util.List[Row] = List(
+    Row("84.79", "138,56", "1.23457E+11", "01.07.2026"), // explicit formats round, General goes scientific
+    Row("3.29", "5414874004074", "-0.123456789", "15.01.2023"),
+    Row("0.00", "0,0005", "1.23456789012E11", "31.12.2024") // cached formula results read as Double.toString
+  ).asJava
+
+  // usePlainNumberFormat=true alone: General cells render plain, explicit formats still round,
+  // cached formula results stay Double.toString -- the gap usePlainNumberFormatForAllCells closes
+  val allCellsGeneralPlainData: util.List[Row] = List(
+    Row("84.79", "138,56", "123456789012", "01.07.2026"),
+    Row("3.29", "5414874004074", "-0.12345678901", "15.01.2023"),
+    Row("0.00", "0,0005", "1.23456789012E11", "31.12.2024")
+  ).asJava
 }
 
 class PlainNumberReadSuite extends AnyFunSuite with DataFrameSuiteBase with ExcelTestingUtilities {
@@ -180,5 +210,61 @@ class PlainNumberReadSuite extends AnyFunSuite with DataFrameSuiteBase with Exce
 
     // Verify both dataframes should be equal
     assertDataFrameEquals(dfWithPlain, dfWithoutPlain)
+  }
+
+  test("explicitly formatted cells render plain when usePlainNumberFormatForAllCells=true") {
+    val df = readFromResources(
+      spark,
+      path = "plain_number_all_cells.xlsx",
+      options = Map("usePlainNumberFormatForAllCells" -> true, "inferSchema" -> false)
+    )
+    val expected = spark.createDataFrame(allCellsPlainData, allCellsSchema)
+    assertDataFrameEquals(expected, df)
+  }
+
+  test("explicitly formatted cells render plain when usePlainNumberFormatForAllCells=true and maxRowsInMemory") {
+    val df = readFromResources(
+      spark,
+      path = "plain_number_all_cells.xlsx",
+      options = Map("usePlainNumberFormatForAllCells" -> true, "inferSchema" -> false, "maxRowsInMemory" -> 1)
+    )
+    val expected = spark.createDataFrame(allCellsPlainData, allCellsSchema)
+    assertDataFrameEquals(expected, df)
+  }
+
+  test("explicitly formatted cells keep display rendering when usePlainNumberFormatForAllCells=false") {
+    val df = readFromResources(
+      spark,
+      path = "plain_number_all_cells.xlsx",
+      options = Map("usePlainNumberFormatForAllCells" -> false, "inferSchema" -> false)
+    )
+    val expected = spark.createDataFrame(allCellsDisplayData, allCellsSchema)
+    assertDataFrameEquals(expected, df)
+  }
+
+  test("explicitly formatted cells still round when only usePlainNumberFormat=true") {
+    val df = readFromResources(
+      spark,
+      path = "plain_number_all_cells.xlsx",
+      options = Map("usePlainNumberFormat" -> true, "inferSchema" -> false)
+    )
+    val expected = spark.createDataFrame(allCellsGeneralPlainData, allCellsSchema)
+    assertDataFrameEquals(expected, df)
+  }
+
+  test("numeric header cells are named consistently with their data cells") {
+    val plain = readFromResources(
+      spark,
+      path = "plain_number_numeric_header.xlsx",
+      options = Map("usePlainNumberFormatForAllCells" -> true, "inferSchema" -> false)
+    )
+    assert(plain.schema.fieldNames.toSeq == Seq("123456789012", "name"))
+
+    val display = readFromResources(
+      spark,
+      path = "plain_number_numeric_header.xlsx",
+      options = Map("usePlainNumberFormatForAllCells" -> false, "inferSchema" -> false)
+    )
+    assert(display.schema.fieldNames.toSeq == Seq("1.23457E+11", "name"))
   }
 }

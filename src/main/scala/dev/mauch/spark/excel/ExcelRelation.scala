@@ -33,6 +33,7 @@ case class ExcelRelation(
   header: Boolean,
   treatEmptyValuesAsNulls: Boolean,
   usePlainNumberFormat: Boolean,
+  usePlainNumberFormatForAllCells: Boolean,
   inferSheetSchema: Boolean,
   setErrorCellsToFallbackValues: Boolean,
   addColorColumns: Boolean = true,
@@ -189,6 +190,7 @@ case class ExcelRelation(
         cell.getColumnIndex,
         treatEmptyValuesAsNulls,
         usePlainNumberFormat,
+        usePlainNumberFormatForAllCells,
         timestampParser,
         dateParser,
         setErrorCellsToFallbackValues
