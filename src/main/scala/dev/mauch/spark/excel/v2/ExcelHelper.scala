@@ -17,12 +17,13 @@
 package dev.mauch.spark.excel.v2
 
 import com.github.pjfanning.xlsx.StreamingReader
+import dev.mauch.spark.excel.PlainNumberFormatMode
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.poi.hssf.usermodel.HSSFWorkbookFactory
 import org.apache.poi.openxml4j.util.ZipInputStreamZipEntrySource
 import org.apache.poi.ss.SpreadsheetVersion
-import org.apache.poi.ss.usermodel.{Cell, CellType, DataFormatter, FormulaError, Workbook, WorkbookFactory}
+import org.apache.poi.ss.usermodel.{Cell, CellType, DataFormatter, DateUtil, FormulaError, Workbook, WorkbookFactory}
 import org.apache.poi.ss.util.{AreaReference, CellReference}
 import org.apache.poi.util.IOUtils
 import org.apache.poi.xssf.usermodel.XSSFWorkbookFactory
@@ -52,8 +53,9 @@ object PlainNumberFormat extends Format {
       // It's an integer, format without decimal point
       toAppendTo.append(stripped.toBigInteger().toString())
     } else {
-      // It's not an integer, format as plain string
-      toAppendTo.append(bd.toPlainString)
+      // It's not an integer, format the stripped value so no trailing zero from
+      // Double.toString's "d.0E-x" mantissa survives (0.0005 must not become "0.00050")
+      toAppendTo.append(stripped.toPlainString)
     }
   }
 
@@ -67,7 +69,7 @@ class ExcelHelper private (options: ExcelOptions) {
   /* For get cell string value */
   private lazy val dataFormatter = {
     val r = new DataFormatter()
-    if (options.usePlainNumberFormat) {
+    if (options.usePlainNumberFormat != PlainNumberFormatMode.Off) {
 
       /* Overwrite ExcelGeneralNumberFormat with custom PlainNumberFormat. See
        * https://github.dev/mauch/spark-excel/issues/321
@@ -97,13 +99,38 @@ class ExcelHelper private (options: ExcelOptions) {
          */
         case CellType.ERROR => FormulaError.forInt(cell.getErrorCellValue).getString
         case CellType.STRING => cell.getStringCellValue
+        case CellType.NUMERIC if renderPlainNumber(cell) => plainNumberString(cell)
         case CellType.NUMERIC => cell.getNumericCellValue.toString
 
         /* Get what displayed on the cell, for all other cases */
         case _ => dataFormatter.formatCellValue(cell)
       }
+    case CellType.NUMERIC if renderPlainNumber(cell) => plainNumberString(cell)
     case _ => dataFormatter.formatCellValue(cell)
   }
+
+  /** Whether this (cached-)numeric cell should be rendered at full precision, ignoring its number format. Date cells
+    * keep their formatted rendering, non-finite values keep POI's display rendering.
+    */
+  private def renderPlainNumber(cell: Cell): Boolean =
+    options.usePlainNumberFormat == PlainNumberFormatMode.All && !DateUtil.isCellDateFormatted(cell) &&
+      java.lang.Double.isFinite(cell.getNumericCellValue)
+
+  /** Render a numeric cell at full precision, ignoring its number format. Invokes [[PlainNumberFormat]] with the same
+    * argument POI's DataFormatter passes to a registered format, so the rendering is identical to
+    * usePlainNumberFormat=true's for General-format cells.
+    */
+  private def plainNumberString(cell: Cell): String =
+    PlainNumberFormat
+      .format(BigDecimal.valueOf(cell.getNumericCellValue), new StringBuffer(), new FieldPosition(0))
+      .toString
+
+  /** Header-cell rendering, honoring usePlainNumberFormat=all so a numeric header is named consistently with its data
+    * cells.
+    */
+  private def headerCellString(cell: Cell): String =
+    if (cell.getCellType == CellType.NUMERIC && renderPlainNumber(cell)) plainNumberString(cell)
+    else dataFormatter.formatCellValue(cell)
 
   /** Get workbook
     *
@@ -230,14 +257,14 @@ class ExcelHelper private (options: ExcelOptions) {
 
     val dataColumns =
       if (options.header) {
-        val headerNames = firstRow.map(dataFormatter.formatCellValue)
+        val headerNames = firstRow.map(headerCellString)
         val duplicates = {
           val nonNullHeaderNames = headerNames.filter(_ != null)
           nonNullHeaderNames.groupBy(identity).filter(_._2.size > 1).keySet
         }
 
         firstRow.zipWithIndex.map { case (cell, index) =>
-          val value = dataFormatter.formatCellValue(cell)
+          val value = headerCellString(cell)
           val cellType = cell.getCellType
           if (
             cellType == CellType.ERROR || cellType == CellType.BLANK ||
