@@ -77,9 +77,7 @@ class ExcelParser(dataSchema: StructType, requiredSchema: StructType, val option
 
   /* Excel row number index (if configured) */
   private val rowNumberPosition =
-    if (options.columnNameOfRowNumber.isDefined) {
-      Some(requiredSchema.fieldIndex(options.columnNameOfRowNumber.get))
-    } else None
+    options.columnNameOfRowNumber.map(name => requiredSchema.fieldNames.indexOf(name)).filter(_ >= 0)
 
   /* Pre-allocated Some to avoid the overhead of building Some per each-row. */
   private val requiredRow = Some(new GenericInternalRow(requiredSchema.length))
