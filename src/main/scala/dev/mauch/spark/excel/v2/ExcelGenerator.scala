@@ -16,6 +16,7 @@
 
 package dev.mauch.spark.excel.v2
 
+import dev.mauch.spark.excel.PlainNumberFormatMode
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
@@ -103,7 +104,8 @@ class ExcelGenerator(val path: String, val dataSchema: StructType, val conf: Con
   private lazy val TimestampCellStyle = createStyle(options.timestampFormat)
   private lazy val WholeNumberCellStyle = createStyle("General")
   private lazy val DecimalNumberCellStyle =
-    if (options.usePlainNumberFormat) createStyle("General") else createStyle("0.00E+000")
+    if (options.usePlainNumberFormat != PlainNumberFormatMode.Off) createStyle("General")
+    else createStyle("0.00E+000")
   private lazy val StringCellStyle = createStyle("@")
 
   private def makeConverter(dataType: DataType): ValueConverter = dataType match {

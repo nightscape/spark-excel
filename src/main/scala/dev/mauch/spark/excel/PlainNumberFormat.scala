@@ -38,8 +38,9 @@ object PlainNumberFormat extends Format {
       // It's an integer, format without decimal point
       toAppendTo.append(stripped.toBigInteger().toString())
     } else {
-      // It's not an integer, format as plain string
-      toAppendTo.append(bd.toPlainString)
+      // It's not an integer, format the stripped value so no trailing zero from
+      // Double.toString's "d.0E-x" mantissa survives (0.0005 must not become "0.00050")
+      toAppendTo.append(stripped.toPlainString)
     }
   }
 
