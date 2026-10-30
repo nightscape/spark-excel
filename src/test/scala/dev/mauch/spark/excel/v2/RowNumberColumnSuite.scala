@@ -97,6 +97,25 @@ object RowNumberColumnSuite {
     Row("8", 16, "7")
   ).asJava
 
+  val expectedSchema_ProjectionNoRowNumber = StructType(
+    List(StructField("3", StringType, true), StructField("2", StringType, true))
+  )
+
+  val expectedData_ProjectionNoRowNumber: util.List[Row] = List(
+    Row(null, null),
+    Row("Info", "Info"),
+    Row(null, null),
+    Row("2", "1"),
+    Row("2", "1"),
+    Row("6", "5"),
+    Row("10", "9"),
+    Row(null, null),
+    Row("2", "1"),
+    Row("2", "1"),
+    Row("5", "4"),
+    Row("8", "7")
+  ).asJava
+
 }
 
 class RowNumberColumnSuite extends AnyFunSuite with DataFrameSuiteBase with ExcelTestingUtilities {
@@ -133,5 +152,26 @@ class RowNumberColumnSuite extends AnyFunSuite with DataFrameSuiteBase with Exce
     ).select("3", "RowID", "2")
     val expected = spark.createDataFrame(expectedData_Projection, expectedSchema_Projection)
     assertDataFrameEquals(expected, df)
+  }
+
+  test("read with addition excel row number column, projection without the row number column") {
+    val df = readFromResources(
+      spark,
+      path = "/issue_285_bryce21.xlsx",
+      Map("header" -> false, "keepUndefinedRows" -> false, "columnNameOfRowNumber" -> "RowID"),
+      schema = expectedSchema
+    ).select("3", "2")
+    val expected = spark.createDataFrame(expectedData_ProjectionNoRowNumber, expectedSchema_ProjectionNoRowNumber)
+    assertDataFrameEquals(expected, df)
+  }
+
+  test("read with addition excel row number column, count") {
+    val df = readFromResources(
+      spark,
+      path = "/issue_285_bryce21.xlsx",
+      Map("header" -> false, "keepUndefinedRows" -> false, "columnNameOfRowNumber" -> "RowID"),
+      schema = expectedSchema
+    )
+    assert(df.count() == expectedData_NoKeep.size())
   }
 }
