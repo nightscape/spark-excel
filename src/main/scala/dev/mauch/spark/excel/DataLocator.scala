@@ -135,6 +135,8 @@ trait AreaDataLocator extends DataLocator {
 
   def toCell(a: Any, dateFormat: String, timestampFormat: String): WriteCell =
     a match {
+      case i: java.time.Instant => dateCell(i.toEpochMilli, timestampFormat)
+      case ld: java.time.LocalDate => dateCell(java.sql.Date.valueOf(ld).getTime, dateFormat)
       case t: java.sql.Timestamp => dateCell(t.getTime, timestampFormat)
       case d: java.sql.Date => dateCell(d.getTime, dateFormat)
       case s: String => WriteCell(s)
@@ -148,6 +150,10 @@ trait AreaDataLocator extends DataLocator {
       case b: BigDecimal => WriteCell(b)
       case b: java.math.BigDecimal => WriteCell(BigDecimal(b))
       case null => WriteCell.Empty
+      case other =>
+        throw new IllegalArgumentException(
+          s"Unsupported value type for Excel cell: ${other.getClass.getName} (value: $other)"
+        )
     }
 }
 
