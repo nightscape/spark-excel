@@ -32,7 +32,7 @@ case class ExcelRelation(
   dataLocator: DataLocator,
   header: Boolean,
   treatEmptyValuesAsNulls: Boolean,
-  usePlainNumberFormat: Boolean,
+  usePlainNumberFormat: PlainNumberFormatMode,
   inferSheetSchema: Boolean,
   setErrorCellsToFallbackValues: Boolean,
   addColorColumns: Boolean = true,

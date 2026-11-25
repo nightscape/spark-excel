@@ -16,6 +16,7 @@
 
 package dev.mauch.spark.excel.v2
 
+import dev.mauch.spark.excel.PlainNumberFormatMode
 import org.apache.spark.sql.catalyst.util.{
   CaseInsensitiveMap,
   DateFormatter,
@@ -103,8 +104,10 @@ trait ExcelOptionsTrait extends Serializable {
   val positiveInf = parameters.getOrElse("positiveInf", "Inf")
   val negativeInf = parameters.getOrElse("negativeInf", "-Inf")
 
-  /* If true, format the cells without rounding and scientific notations */
-  val usePlainNumberFormat = getBool("usePlainNumberFormat", default = false)
+  /* Which numeric cells to format without rounding and scientific notations: false (none), true (General/@-formatted
+     cells), all (every non-date numeric cell, ignoring its number format) */
+  val usePlainNumberFormat: PlainNumberFormatMode =
+    PlainNumberFormatMode.parse(parameters.getOrElse("usePlainNumberFormat", "false"))
 
   /* If true, keep undefined (Excel) rows */
   val keepUndefinedRows = getBool("keepUndefinedRows", default = false)
