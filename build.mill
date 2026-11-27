@@ -1,4 +1,4 @@
-//| mill-version: 1.0.6
+//| mill-version: 1.4.0
 //| mill-jvm-opts: ["-Xmx4G"]
 import coursier.maven.MavenRepository
 import mill._, scalalib._, publish._
